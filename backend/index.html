@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Damasco — Backend PHP 8</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; font-family: 'Segoe UI', system-ui, sans-serif;
+      background: radial-gradient(circle at top, #1e293b, #0a0c10); color: #cbd5e1;
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .card { max-width: 720px; width: 100%; background: #0f172a; border: 1px solid #1e293b; border-radius: 24px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+    h1 { color: #fff; font-size: 30px; margin: 0 0 8px; }
+    .badge { display: inline-block; background: rgba(244,63,94,.15); color: #fb7185; border: 1px solid rgba(244,63,94,.3); border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 4px 12px; text-transform: uppercase; }
+    p { line-height: 1.6; color: #94a3b8; }
+    .status { display: flex; align-items: center; gap: 10px; background: #020617; border: 1px solid #1e293b; border-radius: 14px; padding: 14px 18px; margin: 20px 0; font-family: monospace; font-size: 13px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+    .dot.ok { background: #10b981; box-shadow: 0 0 10px #10b981; }
+    .dot.err { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
+    h2 { color: #e2e8f0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin: 28px 0 12px; }
+    a.endpoint { display: flex; justify-content: space-between; align-items: center; gap: 12px; text-decoration: none; background: #020617; border: 1px solid #1e293b; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; transition: .2s; }
+    a.endpoint:hover { border-color: #f43f5e; background: #0b1220; }
+    code { color: #38bdf8; font-family: monospace; font-size: 13px; }
+    .method { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #1e293b; color: #e2e8f0; }
+    .m-get { color: #34d399; } .m-post { color: #60a5fa; } .m-put { color: #fbbf24; } .m-del { color: #fb7185; }
+    footer { margin-top: 28px; font-size: 12px; color: #475569; border-top: 1px solid #1e293b; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">Mes 6 · E-Commerce Damasco</span>
+    <h1>API Damasco — Backend PHP 8</h1>
+    <p>Servidor REST en PHP 8 puro (patrón MVC con PDO). Levantado con <code>php -S localhost:8000</code> desde esta carpeta.</p>
+
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <span id="status-text">Comprobando conexión con MySQL (damasco)...</span>
+    </div>
+
+    <h2>Endpoints de lectura</h2>
+    <a class="endpoint" href="?url=productos" target="_blank"><code>?url=productos</code><span class="method m-get">GET</span></a>
+    <a class="endpoint" href="?url=productos/1" target="_blank"><code>?url=productos/1</code><span class="method m-get">GET</span></a>
+    <a class="endpoint" href="?url=categorias" target="_blank"><code>?url=categorias</code><span class="method m-get">GET</span></a>
+    <a class="endpoint" href="?url=marcas" target="_blank"><code>?url=marcas</code><span class="method m-get">GET</span></a>
+
+    <h2>Filtros y reportes (Clase 3)</h2>
+    <a class="endpoint" href="?url=productos&precioMin=50&precioMax=300" target="_blank"><code>?url=productos&precioMin=50&precioMax=300</code><span class="method m-get">GET</span></a>
+    <a class="endpoint" href="?url=productos&q=honor" target="_blank"><code>?url=productos&q=honor</code><span class="method m-get">GET</span></a>
+    <a class="endpoint" href="?url=reportes/resumen" target="_blank"><code>?url=reportes/resumen</code><span class="method m-get">GET</span></a>
+    <a class="endpoint" href="?url=reportes/stock-critico&umbral=10" target="_blank"><code>?url=reportes/stock-critico&umbral=10</code><span class="method m-get">GET</span></a>
+
+    <h2>Escritura (usar Thunder Client / Postman)</h2>
+    <p style="margin:6px 0 0"><span class="method m-post">POST</span> <code>?url=productos</code> · <span class="method m-put">PUT</span> <code>?url=productos/{id}</code> · <span class="method m-del">DELETE</span> <code>?url=productos/{id}</code> · <span class="method m-post">POST</span> <code>?url=productos/{id}/imagen</code> (Form-Data).</p>
+
+    <footer>Damasco Fullstack · Mes 6 · PHP 8 + MySQL (PDO) + React</footer>
+  </div>
+
+  <script>
+    // Diagnóstico: la misma peticion que usa React
+    fetch('?url=productos')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var dot = document.getElementById('dot');
+        var txt = document.getElementById('status-text');
+        if (data && data.success) {
+          dot.className = 'dot ok';
+          var total = data.total != null ? data.total : (data.datos ? data.datos.length : 0);
+          txt.textContent = 'Conexión OK · MySQL responde · ' + total + ' productos activos';
+        } else {
+          dot.className = 'dot err';
+          txt.textContent = 'La API respondió con error: ' + (data.error || 'desconocido');
+        }
+      })
+      .catch(function (e) {
+        var dot = document.getElementById('dot');
+        document.getElementById('status-text').textContent = 'Sin conexión: ' + e.message;
+        dot.className = 'dot err';
+      });
+  </script>
+</body>
+</html>

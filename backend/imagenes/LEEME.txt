@@ -1,0 +1,12 @@
+CARPETA DE IMAGENES
+===================
+
+Aqui van las fotos del catalogo de Damasco.
+
+1. Descarga el paquete de imagenes (imgDamasco.rar) desde el portal del curso.
+2. Descomprime su contenido DENTRO de esta carpeta (backend/imagenes/).
+3. Las imagenes quedan disponibles en:
+   http://localhost:8000/imagenes/NOMBRE.png
+
+Ademas, el endpoint de subida (POST ?url=productos/{id}/imagen)
+guardara aqui las imagenes que suban desde el Dashboard.
