@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+    font-size: calc(16px - 2pt);
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      font-size: calc(16px - 1pt);
+    }
+  }
+
+  body {
+    @apply bg-slate-100 text-slate-900;
+  }
+
+  * {
+    @apply border-slate-200;
+  }
+}

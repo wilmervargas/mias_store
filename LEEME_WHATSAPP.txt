@@ -1,0 +1,35 @@
+RUTINA WHATSAPP WEB (Mia's Store)
+=================================
+
+Se incorporó la rutina de WhatsApp Web basada en Baileys (servicio Node) y su integración:
+
+1) Servicio WhatsApp (ws/server)
+   - Ubicación: ws/server
+   - Requisitos: Node.js >= 20
+   - Instalar dependencias (primera vez):  cd ws/server && npm install
+   - Ejecutar:  npm start   (puerto 3000 por defecto)
+   - También puedes usar:  .\ws.ps1  desde la raíz del proyecto
+   - Endpoints locales: /api/whatsapp/status, /api/whatsapp/send, /api/whatsapp/restart, /api/whatsapp/logout
+   - La sesión se guarda en ws/server/auth_info (no versionar). Al iniciar, escanea el QR desde WhatsApp > Dispositivos vinculados.
+
+2) Backend PHP (proxy/integración)
+   - Controlador: backend/controllers/WhatsAppController.php
+   - Rutas API: whatsapp/estado (GET), whatsapp/enviar (POST), whatsapp/reiniciar (POST), whatsapp/logout (POST)
+   - Configuración opcional por variables de entorno del servidor PHP:
+       WHATSAPP_WS_URL (default http://127.0.0.1:3000)
+       WHATSAPP_TIMEOUT (default 20)
+
+3) Dashboard (UI de administración)
+   - Módulo "WhatsApp" en el menú Sistema: muestra estado, QR para vincular, reconectar/cerrar sesión y envío manual de mensajes.
+   - Usa los endpoints del backend PHP (whatsapp/*).
+
+4) Puesta en marcha recomendada
+   - Backend PHP:  cd backend && php -S localhost:8000
+   - Servicio WhatsApp:  cd ws/server && npm start  (o .\ws.ps1)
+   - Dashboard:  cd dashboard && npm run dev
+   - Frontend tienda:  cd frontend && npm run dev
+
+Notas:
+- Método no oficial (WhatsApp Web/Baileys): úsalo para pruebas/mensajes moderados.
+- No expongas el servicio sin autenticación a Internet.
+- Si el estado no conecta, revisa la consola de ws/server y que el puerto 3000 esté libre.
