@@ -1,0 +1,205 @@
+========================================================
+  MIA'S STORE - VERSION 2 (inventario multialmacen)
+========================================================
+
+Esta version amplia el proyecto original (Clases 1-3) con:
+
+  - Costo por producto y valoracion del inventario.
+  - Varios almacenes por producto.
+  - Ubicaciones fisicas en arbol (zona, sector, pasillo,
+    estante, nivel, posicion, caja, vitrina, etc.).
+  - Modelo, color y talla obligatorios por producto.
+    Cada fila de `productos` es una combinacion vendible (SKU).
+  - SKU base global + SKU propio por almacen.
+  - Inventario por ubicacion con auditoria de movimientos.
+  - `productos.stock` se mantiene como total cacheado y lo
+    actualizan triggers a partir de `inventario`.
+
+--------------------------------------------------------
+1. ARCHIVOS DE BASE DE DATOS
+--------------------------------------------------------
+
+  database/migracion_v2.sql
+      Migracion incremental para una base que ya tiene datos.
+      Ya fue aplicada sobre la base `mias_store` actual.
+
+  database/mias_store_v2.sql
+      Esquema limpio V2 para una instalacion nueva.
+      No incluye productos ni pedidos.
+
+  backups/mias_store_utf8_20261029_182126.sql
+      Respaldo previo a la migracion (UTF-8). Conservalo.
+
+  Para instalar desde cero:
+      mysql -u root -D mias_store < database/mias_store_v2.sql
+
+  Para migrar una base existente (una sola pasada):
+      mysql -u root -D mias_store < database/migracion_v2.sql
+
+--------------------------------------------------------
+2. ESTRUCTURA NUEVA
+--------------------------------------------------------
+
+  modelos          Catalogo de modelos (ligado a marca).
+  colores          Catalogo de colores con codigo HEX.
+  tallas           Catalogo de tallas (letra, numero, libre).
+  almacenes        Almacenes fisicos. Cada uno tiene un codigo.
+  tipos_ubicacion  General, Zona, Sector, Pasillo, Estante,
+                   Nivel, Posicion, Caja, Vitrina, Area.
+  ubicaciones      Arbol de ubicaciones por almacen. Guarda
+                   padre_id, ruta completa y profundidad.
+  producto_almacen SKU por almacen, ubicacion preferida y
+                   stock minimo/maximo.
+  inventario       Cantidad por producto + ubicacion fisica.
+  movimientos_inventario
+                   Historial completo: entrada, salida, ajuste,
+                   transferencia, devolucion, venta, compra,
+                   migracion.
+
+  Columnas nuevas en `productos`:
+      producto_base_id, idmodelo, idcolor, idtalla,
+      sku_base, codigo_barras, descripcion, unidad_medida,
+      created_at, updated_at.
+      `costo` pasa a DECIMAL(12,2).
+
+  Vistas de consulta:
+      v_stock_producto, v_stock_almacen,
+      v_stock_ubicacion, v_valor_inventario.
+
+--------------------------------------------------------
+3. REGLAS DE INVENTARIO
+--------------------------------------------------------
+
+  - El stock de un almacen es la suma de sus ubicaciones.
+  - El stock total del producto es la suma de sus almacenes.
+  - `productos.stock` es solo un cache; la fuente real es
+    `inventario`.
+  - Una transferencia resta en origen y suma en destino.
+  - Un ajuste fija la cantidad exacta de una ubicacion.
+  - No se permite dejar una ubicacion con cantidad negativa.
+
+  Codigos de ejemplo ya cargados:
+      Almacen  ALM01  "Almacen Principal"
+      Ubicacion GEN   (General, recibe el stock por defecto)
+      Demo: ZONA-A / PAS-01 / EST-01 / NIV-01 / POS-01
+
+  Los SKU de los productos migrados quedaron asi:
+      sku_base     P-00001
+      sku_almacen  ALM01-P-00001
+
+--------------------------------------------------------
+4. API NUEVA
+--------------------------------------------------------
+
+  Almacenes
+      GET    ?url=almacenes[&todos=1]
+      GET    ?url=almacenes/{id}
+      POST   ?url=almacenes
+      PUT    ?url=almacenes/{id}
+      DELETE ?url=almacenes/{id}
+
+  Ubicaciones
+      GET    ?url=ubicaciones[&almacen=1][&todos=1]
+      GET    ?url=ubicaciones/tipos
+      POST   ?url=ubicaciones
+      PUT    ?url=ubicaciones/{id}
+      DELETE ?url=ubicaciones/{id}
+
+  Catalogos
+      GET/POST      ?url=modelos   ?url=colores   ?url=tallas
+      PUT/DELETE    ?url=modelos/{id}  etc.
+
+  Inventario
+      GET  ?url=inventario[&almacen=1][&ubicacion=1][&q=texto]
+      GET  ?url=inventario/producto/{id}
+      GET  ?url=inventario/movimientos[&producto=1][&tipo=entrada]
+      POST ?url=inventario/movimientos
+
+  Reportes
+      GET ?url=reportes/resumen
+      GET ?url=reportes/stock-critico&umbral=10
+      GET ?url=reportes/stock-por-almacen
+      GET ?url=reportes/stock-por-ubicacion&almacen=1
+      GET ?url=reportes/valor-inventario
+      GET ?url=reportes/kardex&producto=1
+
+  Filtros nuevos de productos:
+      idmodelo, idcolor, idtalla, almacen, stockMax,
+      solo_agotados.
+
+  Ejemplo de movimiento (JSON):
+      POST ?url=inventario/movimientos
+      {
+        "tipo": "transferencia",
+        "producto_id": 1,
+        "ubicacion_origen_id": 1,
+        "ubicacion_destino_id": 2,
+        "cantidad": 3,
+        "motivo": "Reubicacion"
+      }
+
+--------------------------------------------------------
+5. DASHBOARD
+--------------------------------------------------------
+
+  Modulos nuevos en el menu lateral:
+      Inventario   Stock por ubicacion y registro de movimientos.
+      Movimientos  Auditoria con filtros por producto, tipo y fecha.
+      Almacenes    Alta/edicion de almacenes.
+      Ubicaciones  Arbol de ubicaciones por almacen.
+      Catalogos    Modelos, colores y tallas.
+      Reportes     Valor a costo/venta, stock por almacen y
+                   reposicion urgente.
+
+  El formulario de producto ahora incluye costo, SKU, codigo
+  de barras, modelo, color, talla, unidad, almacen, ubicacion y
+  stock inicial. Al editar, cambiar el stock genera un ajuste
+  auditado.
+
+--------------------------------------------------------
+6. TIENDA PUBLICA
+--------------------------------------------------------
+
+  - Agrupa variantes por `producto_base_id`.
+  - Muestra selector de color y talla.
+  - Muestra modelo, SKU y stock real por variante.
+  - Deshabilita la compra cuando la variante no tiene stock.
+
+  Para agrupar automaticamente variantes existentes por color:
+      php backend/scripts/agrupar_variantes.php          (simulacion)
+      php backend/scripts/agrupar_variantes.php --apply  (aplica)
+
+  El script solo agrupa productos con igual marca, categoria,
+  modelo y nombre (sin la palabra del color). Omite grupos con
+  colores repetidos o que ya esten agrupados manualmente.
+
+--------------------------------------------------------
+7. COMO LEVANTAR EL PROYECTO
+--------------------------------------------------------
+
+  Backend:
+      cd backend
+      php -S localhost:8000
+
+  Tienda:
+      cd frontend
+      npm install
+      npm run dev
+
+  Dashboard:
+      cd dashboard
+      npm install
+      npm run dev
+
+  La API queda en http://localhost:8000/index.php?url=...
+
+--------------------------------------------------------
+8. NOTAS
+--------------------------------------------------------
+
+  - Los 393 productos migrados quedaron con talla "M", color
+    detectado por nombre (82 con color real) y costo inicial
+    del 60% del precio.
+  - El costo y el color se pueden corregir desde el Dashboard.
+  - Antes de una migracion futura, genera un respaldo UTF-8 con:
+        mysqldump -u root --result-file=backup.sql mias_store

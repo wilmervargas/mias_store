@@ -1,0 +1,10 @@
+Sabes que este proyecto quiero ahora modificarlo, y requiero de la ayuda de opencode y la IA activa.
+
+Quiero que me reestructures la base de datos que estoy usando en este proyecto.
+Por ejemplo, la tabla Producto, necesito que se agreguen varias cosas.
+ Primero: Este inventario va a tener un campo llamado costo, y el Stock va a ser un atotalizacion de los Stock parciales de cada almacen.
+ En ese sentido, debes cear lo cunducente para que se creen varios almacenes, es decir, los productos
+ podran estar distribuidos en varios almacenes, y dentro de esos almacenes, pasillos, sectores, niveles, etc. Todas las divisiones que puedan haber.
+ De la misma manera, todos los productos deben tener modelos, color y tallas, y cada unoo representara una junidad, y tendra en cada almacen un codidigo SKU bien definido.
+
+ Ve analizando esto a ver la posibilidad.
