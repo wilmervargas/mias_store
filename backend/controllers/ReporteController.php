@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../models/Producto.php';
+<<<<<<< HEAD
 require_once __DIR__ . '/../models/Inventario.php';
+=======
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 
 class ReporteController
 {
@@ -14,7 +17,10 @@ class ReporteController
             $datos = [
                 'resumen'    => Producto::resumenInventario(),
                 'categorias' => Producto::valorPorCategoria(),
+<<<<<<< HEAD
                 'almacenes'  => Producto::stockPorAlmacen(),
+=======
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
             ];
             responder(true, $datos, 200);
         } catch (Throwable $e) {
@@ -32,6 +38,7 @@ class ReporteController
             responder(false, 'Error al generar el reporte: ' . $e->getMessage(), 500);
         }
     }
+<<<<<<< HEAD
 
     /** GET /?url=reportes/stock-por-almacen */
     public function stockPorAlmacen(): void
@@ -77,4 +84,6 @@ class ReporteController
             responder(false, 'Error al generar el kardex: ' . $e->getMessage(), 500);
         }
     }
+=======
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 }

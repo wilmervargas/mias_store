@@ -5,6 +5,7 @@ require_once __DIR__ . '/../config/Database.php';
 
 class Marca
 {
+<<<<<<< HEAD
     /**
      * Marcas con conteos de productos/modelos.
      * $soloActivas protege la Tienda de Clase 1.
@@ -52,6 +53,20 @@ class Marca
         }
 
         return $filas;
+=======
+    /** Marcas con conteo de productos activos. $soloActivas protege la Tienda de Clase 1. */
+    public static function obtenerTodas(bool $soloActivas = true): array
+    {
+        $db    = Database::conectar();
+        $where = $soloActivas ? "WHERE m.idestatus = 1" : "";
+        $sql   = "SELECT m.*, COUNT(p.id) AS total_productos
+                  FROM marcas m
+                  LEFT JOIN productos p ON p.idmarca = m.id AND p.idestatus = 1
+                  {$where}
+                  GROUP BY m.id, m.idestatus, m.nombre
+                  ORDER BY m.nombre ASC";
+        return $db->query($sql)->fetchAll();
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
     }
 
     public static function obtenerPorId(int $id): ?array
@@ -78,6 +93,7 @@ class Marca
         return $stmt->execute([':id' => $id, ':nombre' => $nombre, ':idestatus' => $idestatus]);
     }
 
+<<<<<<< HEAD
     /** Borrado logico. Se bloquea si la marca tiene productos vinculados. */
     public static function eliminar(int $id): bool
     {
@@ -145,4 +161,13 @@ class Marca
             ];
         }
     }
+=======
+    /** Borrado logico. */
+    public static function eliminar(int $id): bool
+    {
+        $db   = Database::conectar();
+        $stmt = $db->prepare("UPDATE marcas SET idestatus = 2 WHERE id = :id");
+        return $stmt->execute([':id' => $id]);
+    }
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 }

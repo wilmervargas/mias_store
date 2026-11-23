@@ -5,6 +5,7 @@ require_once __DIR__ . '/../config/Database.php';
 
 class Categoria
 {
+<<<<<<< HEAD
     /**
      * Categorias con conteo de productos y subcategorias.
      * Filtros: q, estatus.
@@ -53,6 +54,20 @@ class Categoria
         }
 
         return $filas;
+=======
+    /** Categorias con conteo de productos activos. $soloActivas protege la Tienda de Clase 1. */
+    public static function obtenerTodas(bool $soloActivas = true): array
+    {
+        $db    = Database::conectar();
+        $where = $soloActivas ? "WHERE c.idestatus = 1" : "";
+        $sql   = "SELECT c.*, COUNT(p.id) AS total_productos
+                  FROM categorias c
+                  LEFT JOIN productos p ON p.idcategoria = c.id AND p.idestatus = 1
+                  {$where}
+                  GROUP BY c.id, c.idestatus, c.nombre, c.descripcion
+                  ORDER BY c.nombre ASC";
+        return $db->query($sql)->fetchAll();
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
     }
 
     public static function obtenerPorId(int $id): ?array
@@ -84,6 +99,7 @@ class Categoria
         ]);
     }
 
+<<<<<<< HEAD
     /** Borrado logico. Se bloquea si la categoria tiene productos vinculados. */
     public static function eliminar(int $id): bool
     {
@@ -151,4 +167,13 @@ class Categoria
             ];
         }
     }
+=======
+    /** Borrado logico. */
+    public static function eliminar(int $id): bool
+    {
+        $db   = Database::conectar();
+        $stmt = $db->prepare("UPDATE categorias SET idestatus = 2 WHERE id = :id");
+        return $stmt->execute([':id' => $id]);
+    }
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 }

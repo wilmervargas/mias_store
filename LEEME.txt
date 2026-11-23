@@ -1,4 +1,5 @@
 ========================================================
+<<<<<<< HEAD
   DAMASCO FULLSTACK - MES 6  (Base para alumnos)
   Backend PHP 8 + Frontend Tienda React + Dashboard React
 ========================================================
@@ -6,22 +7,59 @@
 Este paquete contiene el proyecto Damasco construido hasta la
 Clase 3 del Mes 6. Sirve como punto de partida para quien se
 atraso o no pudo asistir.
+=======
+  DAMASCO FULLSTACK - MES 6  (PROYECTO COMPLETO)
+  Backend PHP 8 + Tienda React + Dashboard React
+  Clases 1, 2, 3 y 4
+========================================================
+
+Este paquete contiene el proyecto Damasco terminado, tal como
+queda al finalizar la Clase 4 del Mes 6:
+
+  Clase 1 -> Lectura del catalogo con PDO + MVC + React.
+  Clase 2 -> CRUD administrativo (productos, categorias, marcas).
+  Clase 3 -> Subida de imagenes, filtros avanzados y reportes.
+  Clase 4 -> Multimoneda, carrito persistente en MySQL,
+             transacciones ACID y checkout de pedidos.
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 
 CONTENIDO
 ---------
   backend/       -> API REST en PHP 8 puro (patron MVC + PDO).
+<<<<<<< HEAD
                     Incluye Clase 1 (lectura), Clase 2 (CRUD completo),
                     y Clase 3 (subida de imagenes, filtros y reportes).
   frontend/      -> Tienda publica en React + Vite + Tailwind (Clase 1).
   dashboard/     -> Panel administrativo en React + Vite + Tailwind
                     (Clases 2 y 3: CRUD, subida de imagenes y reportes).
   damasco.sql    -> Script de la base de datos.
+=======
+                    Incluye Producto, Categoria, Marca, Reporte,
+                    Dolar, Carrito y Pedido.
+  frontend/      -> Tienda publica en React + Vite + Tailwind.
+                    Incluye carrito en MySQL, drawer, checkout,
+                    recibo de pedido y precios en USD / Bs.
+  dashboard/     -> Panel administrativo en React + Vite + Tailwind
+                    (CRUD, subida de imagenes, reportes, clientes
+                    y pedidos con detalle de cada orden).
+  damasco.sql    -> Script completo de la base de datos.
+
+  Las imagenes de los productos NO vienen dentro de este .rar.
+  Descarga aparte  imgDamasco.rar  y descomprimelo en
+  backend/imagenes/ (asi las fotos quedan en backend/imagenes/xxxx.png).
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 
 REQUISITOS
 ----------
   - WAMP Server (Apache + MySQL) encendido en verde.
+<<<<<<< HEAD
   - Node.js 18+ y npm.
   - WinRAR o 7-Zip para descomprimir el paquete de imagenes.
+=======
+  - PHP 8.1 o superior.
+  - Node.js 18+ y npm.
+  - WinRAR o 7-Zip para descomprimir las imagenes.
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 
 PASO 1 - BASE DE DATOS
 ----------------------
@@ -29,13 +67,23 @@ PASO 1 - BASE DE DATOS
   2. Crea una base de datos llamada:  damasco
      (cotejamiento utf8mb4_general_ci).
   3. Importa el archivo  damasco.sql  dentro de esa base.
+<<<<<<< HEAD
+=======
+  4. Verifica que existan las tablas:
+     productos, categorias, marcas, clientes, dolar,
+     carritos, items_carrito, pedidos e items_pedido.
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 
 PASO 2 - BACKEND (PHP)
 ----------------------
   1. Copia la carpeta  backend/  dentro de la carpeta www de WAMP,
      por ejemplo:  C:\wamp64\www\damasco_api
+<<<<<<< HEAD
   2. Descomprime  imgDamasco.rar  DENTRO de  backend/imagenes/
      (asi las fotos quedan en backend/imagenes/xxxx.png).
+=======
+  2. Descomprime  imgDamasco.rar  DENTRO de  backend/imagenes/.
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
   3. Abre una terminal en la carpeta  backend  y ejecuta:
 
         php -S localhost:8000
@@ -57,6 +105,25 @@ PASO 3 - FRONTEND (Tienda publica)
   Se abrira en  http://localhost:5173  y consumira la API de
   http://localhost:8000.
 
+<<<<<<< HEAD
+=======
+  Flujo para probar la Clase 4:
+  1. Agrega productos al carrito desde la tienda.
+  2. Abre el drawer del carrito (boton 🛒 del navbar).
+  3. Cambia la moneda entre USD y Bs.
+  4. Pulsa "Proceder al Checkout".
+  5. Elige un cliente de damasco.sql (por defecto Ana Perez, ID 1),
+     completa la direccion y confirma el pedido.
+  6. Verifica en phpMyAdmin:
+     - Se creo una fila en pedidos.
+     - Se crearon filas en items_pedido.
+     - El stock de productos disminuyo.
+     - El carrito quedo vacio (items_carrito).
+
+  El carrito se guarda en MySQL (carritos / items_carrito) y usa
+  localStorage solo como cache para arrancar sin conexion.
+
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 PASO 4 - DASHBOARD (Panel admin)
 --------------------------------
   Abre OTRA terminal en la carpeta  dashboard  y ejecuta:
@@ -68,10 +135,19 @@ PASO 4 - DASHBOARD (Panel admin)
 
   Desde el Dashboard puedes crear, editar, desactivar y reactivar
   categorias, marcas y productos; subir imagenes; filtrar y ver
+<<<<<<< HEAD
   reportes de inventario.
 
 ENDPOINTS PRINCIPALES DE LA API
 -------------------------------
+=======
+  reportes de inventario. Tambien incluye las pestanas de Clientes
+  y Pedidos para consultar compradores y el detalle de cada orden.
+
+ENDPOINTS PRINCIPALES DE LA API
+-------------------------------
+  PRODUCTOS Y CATALOGO
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
   GET    ?url=productos
   GET    ?url=productos/{id}
   GET    ?url=productos?q=texto&precioMin=50&precioMax=300&todos=1
@@ -84,9 +160,52 @@ ENDPOINTS PRINCIPALES DE LA API
   GET    ?url=reportes/resumen
   GET    ?url=reportes/stock-critico?umbral=10
 
+<<<<<<< HEAD
   (Todas las escrituras tambien existen para categorias y marcas.)
+=======
+  CLASE 4 - MULTIMONEDA, CARRITO Y PEDIDOS
+  GET    ?url=dolar
+  GET    ?url=carrito&cliente_id=1
+  POST   ?url=carrito/items             { cliente_id, producto_id, cantidad }
+  PUT    ?url=carrito/items/{id}        { cantidad }
+  DELETE ?url=carrito/items/{id}
+  DELETE ?url=carrito&cliente_id=1      (vaciar carrito)
+  POST   ?url=pedidos                   { cliente_id, direccion_envio,
+                                          metodo_pago, numero_referencia,
+                                          tasa_dolar_usada }
+  GET    ?url=pedidos                   (listado para el Dashboard)
+  GET    ?url=pedidos&id={id}
+  GET    ?url=clientes                  (listado para el Dashboard)
+
+  Las respuestas incluyen las claves "success"/"datos" (usadas por
+  la tienda y el dashboard) y "exito"/"mensaje"/"data" (usadas por
+  los ejemplos de la Clase 4).
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 
 SOPORTE
 -------
   El material completo, guias paso a paso y simuladores interactivos
+<<<<<<< HEAD
   estan en el portal del curso (Mes 6, Clases 1, 2 y 3).
+=======
+  estan en el portal del curso (Mes 6, Clases 1 a 4).
+
+INVENTARIO MULTIALMACEN (FASE ACTUAL)
+-------------------------------------
+  La base oficial del proyecto es  mias_store  y ya incluye:
+
+    - Variantes por producto (talla / color / modelo) con SKU unico.
+    - Variante base por producto para sostener el inventario historico.
+    - Stock por almacen y ubicacion (pasillo, estante, sector, nivel).
+    - Kardex de movimientos e inventario inicial inmutable.
+    - Costo y precios en DECIMAL(12,2) a nivel de producto.
+
+  Los scripts SQL y las reglas de ejecucion estan documentados en:
+
+      database/README.md
+
+  El Dashboard incluye el modulo "Inventario" con stock por ubicacion,
+  resumen de valores, movimientos, transferencias y kardex.
+  La tienda permite elegir la presentacion (variante) al comprar.
+
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9

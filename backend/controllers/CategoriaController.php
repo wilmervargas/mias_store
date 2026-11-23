@@ -11,11 +11,15 @@ class CategoriaController
     {
         try {
             $soloActivas = !isset($_GET['incluir_inactivas']) && !isset($_GET['todos']);
+<<<<<<< HEAD
             $filtros = [
                 'q'       => $_GET['q'] ?? '',
                 'estatus' => $_GET['estatus'] ?? '',
             ];
             responder(true, Categoria::obtenerTodas($soloActivas, $filtros), 200);
+=======
+            responder(true, Categoria::obtenerTodas($soloActivas), 200);
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
         } catch (Throwable $e) {
             responder(false, 'Error al listar categorias: ' . $e->getMessage(), 500);
         }
@@ -88,6 +92,7 @@ class CategoriaController
         }
     }
 
+<<<<<<< HEAD
     /** DELETE /?url=categorias/{id}[&fisico=1] */
     public function eliminar(int $id): void
     {
@@ -106,6 +111,14 @@ class CategoriaController
             responder(true, ['mensaje' => "Categoria #{$id} desactivada (borrado logico)"], 200);
         } catch (RuntimeException $e) {
             responder(false, $e->getMessage(), 409);
+=======
+    /** DELETE /?url=categorias/{id} -> Borrado logico. */
+    public function eliminar(int $id): void
+    {
+        try {
+            Categoria::eliminar($id);
+            responder(true, ['mensaje' => "Categoria #{$id} desactivada (borrado logico)"], 200);
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
         } catch (Throwable $e) {
             responder(false, $e->getMessage(), 500);
         }

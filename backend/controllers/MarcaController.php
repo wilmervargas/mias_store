@@ -11,11 +11,15 @@ class MarcaController
     {
         try {
             $soloActivas = !isset($_GET['incluir_inactivas']) && !isset($_GET['todos']);
+<<<<<<< HEAD
             $filtros = [
                 'q'       => $_GET['q'] ?? '',
                 'estatus' => $_GET['estatus'] ?? '',
             ];
             responder(true, Marca::obtenerTodas($soloActivas, $filtros), 200);
+=======
+            responder(true, Marca::obtenerTodas($soloActivas), 200);
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
         } catch (Throwable $e) {
             responder(false, 'Error al listar marcas: ' . $e->getMessage(), 500);
         }
@@ -82,6 +86,7 @@ class MarcaController
         }
     }
 
+<<<<<<< HEAD
     /** DELETE /?url=marcas/{id}[&fisico=1] */
     public function eliminar(int $id): void
     {
@@ -100,6 +105,14 @@ class MarcaController
             responder(true, ['mensaje' => "Marca #{$id} desactivada"], 200);
         } catch (RuntimeException $e) {
             responder(false, $e->getMessage(), 409);
+=======
+    /** DELETE /?url=marcas/{id} -> Borrado logico. */
+    public function eliminar(int $id): void
+    {
+        try {
+            Marca::eliminar($id);
+            responder(true, ['mensaje' => "Marca #{$id} desactivada"], 200);
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
         } catch (Throwable $e) {
             responder(false, $e->getMessage(), 500);
         }

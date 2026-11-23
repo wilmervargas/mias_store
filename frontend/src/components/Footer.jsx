@@ -10,7 +10,11 @@ export default function Footer() {
             <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
                 <div>
                     <span className={`font-bold text-sm block ${isDark ? 'text-white' : 'text-slate-900'}`}>
+<<<<<<< HEAD
                         Proyecto Mia's Store E-Commerce
+=======
+                        Proyecto Damasco E-Commerce
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
                     </span>
                     <p className="mt-1 text-[11px] text-slate-400">
                         Curso Full Stack JS + PHP 8 Backend MVC • Cohorte 2026
@@ -24,6 +28,7 @@ export default function Footer() {
                     <span>•</span>
                     <span>🌗 ThemeContext</span>
                     <span>•</span>
+<<<<<<< HEAD
                     <span>🛒 CarritoContext</span>
                     <span>•</span>
                     <span>⚛️ React 19</span>
@@ -31,6 +36,15 @@ export default function Footer() {
 
                 <div className="text-[10px] font-mono text-slate-500">
                     Base oficial para la Clase 2 del Mes 6
+=======
+                    <span>🛒 Carrito MySQL</span>
+                    <span>•</span>
+                    <span>💱 Multimoneda</span>
+                </div>
+
+                <div className="text-[10px] font-mono text-slate-500">
+                    Proyecto completo • Clases 1 a 4 del Mes 6
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
                 </div>
             </div>
         </footer>

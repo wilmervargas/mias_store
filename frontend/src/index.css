@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @import "tailwindcss";
 
 @theme {
@@ -24,3 +25,6 @@
     @apply border-slate-200;
   }
 }
+=======
+@import "tailwindcss";
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9

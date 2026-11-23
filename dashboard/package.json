@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "name": "dashboard-mias-store",
+=======
+  "name": "dashboard-damasco",
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
   "private": true,
   "version": "0.0.0",
   "type": "module",

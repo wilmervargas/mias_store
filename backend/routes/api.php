@@ -1,11 +1,16 @@
 <?php
+<<<<<<< HEAD
 // routes/api.php  ->  Router central de la API Mia's Store
+=======
+// routes/api.php  ->  Router central de la API Damasco (Clases 1, 2, 3 y 4)
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 // Recibe $url y $metodo definidos en index.php
 declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../controllers/ProductoController.php';
 require_once __DIR__ . '/../controllers/CategoriaController.php';
+<<<<<<< HEAD
 require_once __DIR__ . '/../controllers/SubcategoriaController.php';
 require_once __DIR__ . '/../controllers/MarcaController.php';
 require_once __DIR__ . '/../controllers/ReporteController.php';
@@ -25,16 +30,55 @@ $ctrlUbi   = new UbicacionController();
 $ctrlCatal = new CatalogoController();
 $ctrlInv   = new InventarioController();
 $ctrlWa    = new WhatsAppController();
+=======
+require_once __DIR__ . '/../controllers/MarcaController.php';
+require_once __DIR__ . '/../controllers/ReporteController.php';
+require_once __DIR__ . '/../controllers/DolarController.php';
+require_once __DIR__ . '/../controllers/CarritoController.php';
+require_once __DIR__ . '/../controllers/PedidoController.php';
+require_once __DIR__ . '/../controllers/ClienteController.php';
+require_once __DIR__ . '/../controllers/VarianteController.php';
+require_once __DIR__ . '/../controllers/CatalogoController.php';
+require_once __DIR__ . '/../controllers/InventarioController.php';
+
+$ctrlProd    = new ProductoController();
+$ctrlCat     = new CategoriaController();
+$ctrlMarca   = new MarcaController();
+$ctrlRepo    = new ReporteController();
+$ctrlDolar   = new DolarController();
+$ctrlCarrito = new CarritoController();
+$ctrlPedido  = new PedidoController();
+$ctrlCliente = new ClienteController();
+$ctrlVariante = new VarianteController();
+$ctrlCatalogo = new CatalogoController();
+$ctrlInventario = new InventarioController();
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 
 // ==============================================================
 // 1. PRODUCTOS
 // ==============================================================
 
+<<<<<<< HEAD
 // Subida de imagen -> va ANTES de /productos/{id}
+=======
+// PASO 3 (Clase 3): subida de imagen  ->  va ANTES de /productos/{id}
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 if ($metodo === 'POST' && preg_match('#^(?:api/)?productos/([0-9]+)/imagen$#', $url, $m)) {
     $ctrlProd->subirImagen((int) $m[1]);
     exit;
 }
+<<<<<<< HEAD
+=======
+// Variantes del producto -> van antes de /productos/{id}
+if ($metodo === 'GET' && preg_match('#^(?:api/)?productos/([0-9]+)/variantes$#', $url, $m)) {
+    $ctrlVariante->listar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'POST' && preg_match('#^(?:api/)?productos/([0-9]+)/variantes$#', $url, $m)) {
+    $ctrlVariante->crear((int) $m[1]);
+    exit;
+}
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 if ($metodo === 'GET' && preg_match('#^(?:api/)?productos/([0-9]+)$#', $url, $m)) {
     $ctrlProd->mostrar((int) $m[1]);
     exit;
@@ -81,6 +125,7 @@ if ($metodo === 'DELETE' && preg_match('#^(?:api/)?categorias/([0-9]+)$#', $url,
 }
 
 // ==============================================================
+<<<<<<< HEAD
 // 3. SUBCATEGORIAS (vinculadas a categorias)
 // ==============================================================
 if ($metodo === 'GET' && preg_match('#^(?:api/)?subcategorias/([0-9]+)$#', $url, $m)) {
@@ -106,6 +151,9 @@ if ($metodo === 'DELETE' && preg_match('#^(?:api/)?subcategorias/([0-9]+)$#', $u
 
 // ==============================================================
 // 4. MARCAS
+=======
+// 3. MARCAS
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 // ==============================================================
 if ($metodo === 'GET' && preg_match('#^(?:api/)?marcas/([0-9]+)$#', $url, $m)) {
     $ctrlMarca->mostrar((int) $m[1]);
@@ -129,6 +177,7 @@ if ($metodo === 'DELETE' && preg_match('#^(?:api/)?marcas/([0-9]+)$#', $url, $m)
 }
 
 // ==============================================================
+<<<<<<< HEAD
 // 4. ALMACENES
 // ==============================================================
 if ($metodo === 'GET' && preg_match('#^(?:api/)?almacenes/([0-9]+)$#', $url, $m)) {
@@ -228,6 +277,9 @@ if ($metodo === 'GET' && ($url === 'inventario' || $url === 'api/inventario')) {
 
 // ==============================================================
 // 8. REPORTES
+=======
+// 4. REPORTES (Clase 3)
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 // ==============================================================
 if ($metodo === 'GET' && ($url === 'reportes/resumen' || $url === 'api/reportes/resumen')) {
     $ctrlRepo->resumen();
@@ -237,6 +289,7 @@ if ($metodo === 'GET' && ($url === 'reportes/stock-critico' || $url === 'api/rep
     $ctrlRepo->stockCritico();
     exit;
 }
+<<<<<<< HEAD
 if ($metodo === 'GET' && ($url === 'reportes/stock-por-almacen' || $url === 'api/reportes/stock-por-almacen')) {
     $ctrlRepo->stockPorAlmacen();
     exit;
@@ -251,10 +304,19 @@ if ($metodo === 'GET' && ($url === 'reportes/valor-inventario' || $url === 'api/
 }
 if ($metodo === 'GET' && ($url === 'reportes/kardex' || $url === 'api/reportes/kardex')) {
     $ctrlRepo->kardex();
+=======
+
+// ==============================================================
+// 5. DOLAR (Clase 4)
+// ==============================================================
+if ($metodo === 'GET' && ($url === 'dolar' || $url === 'api/dolar')) {
+    $ctrlDolar->index();
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
     exit;
 }
 
 // ==============================================================
+<<<<<<< HEAD
 // 9. WHATSAPP WEB (proxy al servicio ws/server)
 // ==============================================================
 if ($metodo === 'GET' && ($url === 'whatsapp/estado' || $url === 'api/whatsapp/estado')) {
@@ -271,10 +333,134 @@ if ($metodo === 'POST' && ($url === 'whatsapp/reiniciar' || $url === 'api/whatsa
 }
 if ($metodo === 'POST' && ($url === 'whatsapp/logout' || $url === 'api/whatsapp/logout' || $url === 'whatsapp/cerrar' || $url === 'api/whatsapp/cerrar')) {
     $ctrlWa->cerrarSesion();
+=======
+// 6. CARRITO (Clase 4)
+// ==============================================================
+if ($metodo === 'GET' && ($url === 'carrito' || $url === 'api/carrito')) {
+    $ctrlCarrito->listar();
+    exit;
+}
+if ($metodo === 'DELETE' && ($url === 'carrito' || $url === 'api/carrito')) {
+    $ctrlCarrito->vaciar();
+    exit;
+}
+if ($metodo === 'POST' && ($url === 'carrito/items' || $url === 'api/carrito/items')) {
+    $ctrlCarrito->agregar();
+    exit;
+}
+if ($metodo === 'PUT' && preg_match('#^(?:api/)?carrito/items/([0-9]+)$#', $url, $m)) {
+    $ctrlCarrito->actualizar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'DELETE' && preg_match('#^(?:api/)?carrito/items/([0-9]+)$#', $url, $m)) {
+    $ctrlCarrito->eliminar((int) $m[1]);
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
     exit;
 }
 
 // ==============================================================
+<<<<<<< HEAD
 // 10. RUTA NO ENCONTRADA (404)
+=======
+// 7. CLIENTES (Dashboard)
+// ==============================================================
+if ($metodo === 'GET' && ($url === 'clientes' || $url === 'api/clientes')) {
+    $ctrlCliente->listar();
+    exit;
+}
+
+// ==============================================================
+// 8. PEDIDOS (Clase 4 + Dashboard)
+// ==============================================================
+if ($metodo === 'POST' && ($url === 'pedidos' || $url === 'api/pedidos')) {
+    $ctrlPedido->crear();
+    exit;
+}
+if ($metodo === 'GET' && ($url === 'pedidos' || $url === 'api/pedidos')) {
+    if (!empty($_GET['id'])) {
+        $ctrlPedido->ver((int) $_GET['id']);
+    } else {
+        $ctrlPedido->listar();
+    }
+    exit;
+}
+
+// ==============================================================
+// 9. VARIANTES (talla / color / modelo)
+// ==============================================================
+if ($metodo === 'GET' && preg_match('#^(?:api/)?variantes/([0-9]+)$#', $url, $m)) {
+    $ctrlVariante->mostrar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'PUT' && preg_match('#^(?:api/)?variantes/([0-9]+)$#', $url, $m)) {
+    $ctrlVariante->actualizar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'DELETE' && preg_match('#^(?:api/)?variantes/([0-9]+)$#', $url, $m)) {
+    $ctrlVariante->eliminar((int) $m[1]);
+    exit;
+}
+
+// ==============================================================
+// 10. CATALOGOS DE INVENTARIO
+// ==============================================================
+$catalogos = '(almacenes|ubicaciones|tallas|colores|modelos)';
+
+if ($metodo === 'GET' && preg_match("#^(?:api/)?{$catalogos}$#", $url, $m)) {
+    $ctrlCatalogo->listar($m[1]);
+    exit;
+}
+if ($metodo === 'POST' && preg_match("#^(?:api/)?{$catalogos}$#", $url, $m)) {
+    $ctrlCatalogo->crear($m[1]);
+    exit;
+}
+if ($metodo === 'PUT' && preg_match("#^(?:api/)?{$catalogos}/([0-9]+)$#", $url, $m)) {
+    $ctrlCatalogo->actualizar($m[1], (int) $m[2]);
+    exit;
+}
+if ($metodo === 'DELETE' && preg_match("#^(?:api/)?{$catalogos}/([0-9]+)$#", $url, $m)) {
+    $ctrlCatalogo->eliminar($m[1], (int) $m[2]);
+    exit;
+}
+
+// ==============================================================
+// 11. INVENTARIO Y KARDEX
+// ==============================================================
+if ($metodo === 'GET' && ($url === 'inventario' || $url === 'api/inventario')) {
+    $ctrlInventario->listar();
+    exit;
+}
+if ($metodo === 'GET' && ($url === 'inventario/resumen' || $url === 'api/inventario/resumen')) {
+    $ctrlInventario->resumen();
+    exit;
+}
+if ($metodo === 'GET' && ($url === 'inventario/kardex' || $url === 'api/inventario/kardex')) {
+    $ctrlInventario->kardex();
+    exit;
+}
+if ($metodo === 'GET' && ($url === 'inventario/critico' || $url === 'api/inventario/critico')) {
+    $ctrlInventario->critico();
+    exit;
+}
+if ($metodo === 'GET' && ($url === 'inventario/clasificacion' || $url === 'api/inventario/clasificacion')) {
+    $ctrlInventario->clasificacion();
+    exit;
+}
+if ($metodo === 'GET' && preg_match('#^(?:api/)?inventario/stock/([0-9]+)$#', $url, $m)) {
+    $ctrlInventario->stockVariante((int) $m[1]);
+    exit;
+}
+if ($metodo === 'POST' && ($url === 'inventario/movimientos' || $url === 'api/inventario/movimientos')) {
+    $ctrlInventario->movimiento();
+    exit;
+}
+if ($metodo === 'POST' && ($url === 'inventario/transferencias' || $url === 'api/inventario/transferencias')) {
+    $ctrlInventario->transferir();
+    exit;
+}
+
+// ==============================================================
+// 12. RUTA NO ENCONTRADA (404)
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
 // ==============================================================
 responder(false, "Ruta no encontrada: [{$metodo}] {$url}", 404);

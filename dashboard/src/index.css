@@ -1,4 +1,5 @@
 @import "tailwindcss";
+<<<<<<< HEAD
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -35,3 +36,5 @@
   }
 }
 
+=======
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9

@@ -35,7 +35,11 @@ export const useTasaDolar = () => {
           setFecha(res?.datos?.fecha || null);
         }
       })
+<<<<<<< HEAD
       .catch(() => console.warn('API sin conexion. Usando tasa fallback de mias_store.sql.'))
+=======
+      .catch(() => console.warn('API sin conexion. Usando tasa fallback de damasco.sql.'))
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
       .finally(() => setCargando(false));
   }, []);
 
@@ -44,10 +48,17 @@ export const useTasaDolar = () => {
 
 export const CurrencyProvider = ({ children }) => {
   const { tasa, fecha, cargando } = useTasaDolar();
+<<<<<<< HEAD
   const [moneda, setMoneda] = useState(() => localStorage.getItem('mias_store_moneda') || 'USD');
 
   useEffect(() => {
     localStorage.setItem('mias_store_moneda', moneda);
+=======
+  const [moneda, setMoneda] = useState(() => localStorage.getItem('damasco_moneda') || 'USD');
+
+  useEffect(() => {
+    localStorage.setItem('damasco_moneda', moneda);
+>>>>>>> 4ed4c0d49af456511b2496f12b1325281837eab9
   }, [moneda]);
 
   const toggleMoneda = () => setMoneda((actual) => (actual === 'USD' ? 'VES' : 'USD'));
