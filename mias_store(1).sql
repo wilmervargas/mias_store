@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 23-11-2026 a las 11:31:49
+-- Tiempo de generación: 24-11-2026 a las 21:56:07
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -43,7 +43,24 @@ CREATE TABLE `almacenes` (
 --
 
 INSERT INTO `almacenes` (`id`, `codigo`, `nombre`, `direccion`, `telefono`, `idestatus`, `created_at`, `updated_at`) VALUES
-(1, 'ALM01', 'Almacen Principal', 'Sede principal', '', 1, '2026-10-29 22:22:09', '2026-11-12 00:01:19');
+(1, 'ALM01', 'Almacen Principal', 'Sede principal', '', 1, '2026-10-29 22:22:09', '2026-11-12 00:01:19'),
+(6, 'ALM02', 'ALMACEN SEGUNDO', 'VALENCIA', '', 1, '2026-11-24 20:34:34', '2026-11-24 20:34:34');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `backup_items_carrito_v1`
+--
+
+CREATE TABLE `backup_items_carrito_v1` (
+  `id` int(11) NOT NULL DEFAULT 0,
+  `carrito_id` int(11) DEFAULT NULL,
+  `cliente_id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `variante_id` int(11) DEFAULT NULL,
+  `cantidad` int(11) NOT NULL DEFAULT 1,
+  `added_at` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -214,14 +231,19 @@ CREATE TABLE `inventario` (
   `lote` varchar(50) DEFAULT NULL,
   `fecha_vencimiento` date DEFAULT NULL,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `inventario`
 --
 
 INSERT INTO `inventario` (`id`, `producto_id`, `ubicacion_id`, `cantidad`, `lote`, `fecha_vencimiento`, `updated_at`) VALUES
-(519, 1, 1, 22, NULL, NULL, '2026-11-12 01:53:35');
+(519, 1, 1, 22, NULL, NULL, '2026-11-12 01:53:35'),
+(522, 424, 1, 8, NULL, NULL, '2026-11-24 20:09:25'),
+(523, 425, 1, 22, NULL, NULL, '2026-11-24 20:15:59'),
+(524, 426, 1, 10, NULL, NULL, '2026-11-24 20:15:59'),
+(525, 428, 1, 10, NULL, NULL, '2026-11-24 20:18:39'),
+(526, 428, 2, 1, NULL, NULL, '2026-11-24 20:45:39');
 
 --
 -- Disparadores `inventario`
@@ -346,14 +368,20 @@ CREATE TABLE `movimientos_inventario` (
   `motivo` varchar(255) DEFAULT NULL,
   `usuario_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `movimientos_inventario`
 --
 
 INSERT INTO `movimientos_inventario` (`id`, `tipo`, `producto_id`, `almacen_origen_id`, `almacen_destino_id`, `ubicacion_origen_id`, `ubicacion_destino_id`, `cantidad`, `costo_unitario`, `referencia`, `motivo`, `usuario_id`, `created_at`) VALUES
-(524, 'ajuste', 1, NULL, 1, NULL, 1, 22, 1.00, 'Ajuste manual', 'Cambio de stock desde el formulario (+22)', NULL, '2026-11-12 01:53:35');
+(524, 'ajuste', 1, NULL, 1, NULL, 1, 22, 1.00, 'Ajuste manual', 'Cambio de stock desde el formulario (+22)', NULL, '2026-11-12 01:53:35'),
+(527, 'entrada', 424, NULL, 1, NULL, 1, 5, 10.00, 'Stock inicial', 'Registro de producto', NULL, '2026-11-24 20:09:25'),
+(528, 'ajuste', 424, NULL, 1, NULL, 1, 3, 10.00, 'Ajuste manual', 'Cambio de stock desde el formulario (+3)', NULL, '2026-11-24 20:09:25'),
+(529, 'entrada', 425, NULL, 1, NULL, 1, 22, 1.00, 'Stock inicial', 'Registro de producto', NULL, '2026-11-24 20:15:59'),
+(530, 'entrada', 426, NULL, 1, NULL, 1, 10, 1.00, 'Stock inicial', 'Registro de producto', NULL, '2026-11-24 20:15:59'),
+(531, 'entrada', 428, NULL, 1, NULL, 1, 10, 5.00, 'Stock inicial', 'Registro de producto', NULL, '2026-11-24 20:18:39'),
+(532, 'ajuste', 428, NULL, 1, NULL, 2, 1, 12.00, 'Ajuste manual', 'Cambio de stock desde el formulario (+1)', NULL, '2026-11-24 20:45:39');
 
 -- --------------------------------------------------------
 
@@ -376,12 +404,79 @@ CREATE TABLE `pedidos` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `permissions`
+--
+
+CREATE TABLE `permissions` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `code` varchar(80) NOT NULL,
+  `module` varchar(50) NOT NULL,
+  `description` varchar(255) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `permissions`
+--
+
+INSERT INTO `permissions` (`id`, `code`, `module`, `description`) VALUES
+(1, 'productos.ver', 'productos', 'Ver el catalogo de productos y variantes'),
+(2, 'productos.crear', 'productos', 'Crear productos y variantes'),
+(3, 'productos.editar', 'productos', 'Editar productos, precios y estado'),
+(4, 'productos.eliminar', 'productos', 'Eliminar o desactivar productos'),
+(5, 'inventario.ver', 'inventario', 'Ver existencias por almacen y ubicacion'),
+(6, 'inventario.editar', 'inventario', 'Ajustar existencias de inventario'),
+(7, 'movimientos.ver', 'movimientos', 'Ver el historial de movimientos'),
+(8, 'movimientos.crear', 'movimientos', 'Registrar entradas, salidas, traslados y ajustes'),
+(9, 'almacenes.ver', 'almacenes', 'Ver almacenes'),
+(10, 'almacenes.crear', 'almacenes', 'Crear almacenes'),
+(11, 'almacenes.editar', 'almacenes', 'Editar almacenes'),
+(12, 'almacenes.eliminar', 'almacenes', 'Eliminar o desactivar almacenes'),
+(13, 'ubicaciones.ver', 'ubicaciones', 'Ver ubicaciones fisicas'),
+(14, 'ubicaciones.crear', 'ubicaciones', 'Crear ubicaciones'),
+(15, 'ubicaciones.editar', 'ubicaciones', 'Editar ubicaciones'),
+(16, 'ubicaciones.eliminar', 'ubicaciones', 'Eliminar o desactivar ubicaciones'),
+(17, 'categorias.ver', 'categorias', 'Ver categorias'),
+(18, 'categorias.crear', 'categorias', 'Crear categorias'),
+(19, 'categorias.editar', 'categorias', 'Editar categorias'),
+(20, 'categorias.eliminar', 'categorias', 'Eliminar o desactivar categorias'),
+(21, 'marcas.ver', 'marcas', 'Ver marcas'),
+(22, 'marcas.crear', 'marcas', 'Crear marcas'),
+(23, 'marcas.editar', 'marcas', 'Editar marcas'),
+(24, 'marcas.eliminar', 'marcas', 'Eliminar o desactivar marcas'),
+(25, 'catalogos.ver', 'catalogos', 'Ver modelos, colores y tallas'),
+(26, 'catalogos.crear', 'catalogos', 'Crear modelos, colores y tallas'),
+(27, 'catalogos.editar', 'catalogos', 'Editar modelos, colores y tallas'),
+(28, 'catalogos.eliminar', 'catalogos', 'Eliminar modelos, colores y tallas'),
+(29, 'reportes.ver', 'reportes', 'Ver reportes e indicadores'),
+(30, 'whatsapp.ver', 'whatsapp', 'Ver el estado de la conexion de WhatsApp'),
+(31, 'whatsapp.crear', 'whatsapp', 'Enviar mensajes por WhatsApp'),
+(32, 'whatsapp.editar', 'whatsapp', 'Conectar, reiniciar o cerrar sesion de WhatsApp'),
+(33, 'usuarios.ver', 'usuarios', 'Ver usuarios y cuentas'),
+(34, 'usuarios.crear', 'usuarios', 'Crear usuarios'),
+(35, 'usuarios.editar', 'usuarios', 'Editar usuarios y asignar roles'),
+(36, 'usuarios.eliminar', 'usuarios', 'Eliminar usuarios'),
+(37, 'roles.ver', 'roles', 'Ver roles y sus permisos'),
+(38, 'roles.crear', 'roles', 'Crear roles'),
+(39, 'roles.editar', 'roles', 'Editar nombre y descripcion de roles'),
+(40, 'roles.eliminar', 'roles', 'Eliminar roles sin usuarios asignados'),
+(41, 'roles.gestionar', 'roles', 'Gestionar la matriz de permisos de los roles'),
+(42, 'seguridad.ver', 'seguridad', 'Ver el centro de claves y seguridad'),
+(43, 'seguridad.claves', 'seguridad', 'Restablecer claves de otros usuarios'),
+(44, 'unidades.ver', 'unidades', 'Ver unidades de medida'),
+(45, 'unidades.crear', 'unidades', 'Crear unidades de medida'),
+(46, 'unidades.editar', 'unidades', 'Editar unidades de medida'),
+(47, 'unidades.eliminar', 'unidades', 'Eliminar o desactivar unidades de medida');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `productos`
 --
 
 CREATE TABLE `productos` (
   `id` int(11) NOT NULL,
   `producto_base_id` int(11) DEFAULT NULL,
+  `es_base` tinyint(1) NOT NULL DEFAULT 0,
   `idestatus` int(11) NOT NULL,
   `idcategoria` int(11) DEFAULT NULL,
   `idsubcategoria` int(11) NOT NULL,
@@ -389,9 +484,12 @@ CREATE TABLE `productos` (
   `idmodelo` int(11) NOT NULL DEFAULT 1,
   `idcolor` int(11) NOT NULL DEFAULT 1,
   `idtalla` int(11) NOT NULL DEFAULT 1,
+  `idunidad` int(11) NOT NULL DEFAULT 1,
   `nombre` varchar(100) NOT NULL,
   `descripcion` text DEFAULT NULL,
   `sku_base` varchar(64) NOT NULL,
+  `codigo_producto` varchar(64) DEFAULT NULL,
+  `codigo_detalle` varchar(64) DEFAULT NULL,
   `codigo_barras` varchar(64) DEFAULT NULL,
   `tipo` varchar(9) DEFAULT NULL,
   `estrellas` varchar(100) NOT NULL,
@@ -403,14 +501,18 @@ CREATE TABLE `productos` (
   `imagen` varchar(150) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+) ;
 
 --
 -- Volcado de datos para la tabla `productos`
 --
 
-INSERT INTO `productos` (`id`, `producto_base_id`, `idestatus`, `idcategoria`, `idsubcategoria`, `idmarca`, `idmodelo`, `idcolor`, `idtalla`, `nombre`, `descripcion`, `sku_base`, `codigo_barras`, `tipo`, `estrellas`, `costo`, `precio`, `preciofull`, `stock`, `unidad_medida`, `imagen`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 8, 34, 1, 2, 17, 16, '111111111111111111', '2222222222222222222222', '11111', NULL, '', '', 1.00, 2.00, 3.00, 22, 'UND', 'prod_1_a5879c0d.jpg', '2026-11-12 01:52:56', '2026-11-21 01:15:50');
+INSERT INTO `productos` (`id`, `producto_base_id`, `es_base`, `idestatus`, `idcategoria`, `idsubcategoria`, `idmarca`, `idmodelo`, `idcolor`, `idtalla`, `idunidad`, `nombre`, `descripcion`, `sku_base`, `codigo_producto`, `codigo_detalle`, `codigo_barras`, `tipo`, `estrellas`, `costo`, `precio`, `preciofull`, `stock`, `unidad_medida`, `imagen`, `created_at`, `updated_at`) VALUES
+(1, NULL, 1, 1, 8, 34, 1, 2, 1, 1, 1, 'BLUSAS', 'BLUSAS MANGAS X', '11111', '11111', NULL, NULL, '', '', 0.00, 0.00, 0.00, 22, 'UND', 'prod_1_a5879c0d.jpg', '2026-11-12 01:52:56', '2026-11-24 20:24:50'),
+(424, NULL, 0, 1, 8, 34, 1, 2, 11, 4, 1, 'PRODUCTO PRUEBA NOMBRE', 'PRODUCTO PRUEBA DESCRIPCUON', 'P-00424', 'PB-00427', 'PB-00427-00424', 'QE1', NULL, '5', 10.00, 20.00, 25.00, 8, 'UND', 'prod_424_c93c7dc5.jpg', '2026-11-24 20:09:25', '2026-11-24 20:33:28'),
+(425, 1, 0, 1, 8, 34, 1, 2, 17, 16, 1, 'BLUSAS', 'BLUSAS MANGAS X', 'P-00425', '11111', '11111-00425', NULL, NULL, '', 1.00, 2.00, 3.00, 22, 'UND', 'prod_1_a5879c0d.jpg', '2026-11-24 20:15:59', '2026-11-24 20:25:32'),
+(426, 1, 0, 1, 8, 34, 1, 2, 4, 15, 1, 'BLUSAS', 'BLUSAS MANGAS X', 'P-00426', '11111', '11111-00426', NULL, NULL, '', 1.00, 2.00, 2.00, 10, 'UND', 'prod_1_a5879c0d.jpg', '2026-11-24 20:15:59', '2026-11-24 20:25:32'),
+(428, NULL, 0, 1, 8, 34, 1, 2, 12, 14, 1, 'PRODUCTO PRUEBA NOMBRE', 'PRODUCTO PRUEBA DESCRIPCUON', 'P-00428', 'PB-00427', 'PB-00427-00428', 'qaqa', NULL, '5', 12.00, 33.00, 33.00, 11, 'UND', 'sin-foto.png', '2026-11-24 20:18:39', '2026-11-24 20:45:39');
 
 -- --------------------------------------------------------
 
@@ -436,7 +538,159 @@ CREATE TABLE `producto_almacen` (
 --
 
 INSERT INTO `producto_almacen` (`id`, `producto_id`, `almacen_id`, `sku_almacen`, `ubicacion_preferida_id`, `stock_minimo`, `stock_maximo`, `idestatus`, `created_at`, `updated_at`) VALUES
-(519, 1, 1, 'ALM01-11111', 1, 0, NULL, 1, '2026-11-12 01:53:34', '2026-11-12 01:53:34');
+(519, 1, 1, 'ALM01-11111', 1, 0, NULL, 1, '2026-11-12 01:53:34', '2026-11-12 01:53:34'),
+(522, 424, 1, 'ALM01-P-00424', 1, 0, NULL, 1, '2026-11-24 20:09:25', '2026-11-24 20:09:25'),
+(523, 425, 1, 'ALM01-P-00425', 1, 0, NULL, 1, '2026-11-24 20:15:59', '2026-11-24 20:15:59'),
+(524, 426, 1, 'ALM01-P-00426', 1, 0, NULL, 1, '2026-11-24 20:15:59', '2026-11-24 20:15:59'),
+(525, 428, 1, 'ALM01-P-00428', 1, 0, NULL, 1, '2026-11-24 20:18:39', '2026-11-24 20:18:39'),
+(526, 428, 6, 'ALM02-P-00428', 13, 0, NULL, 1, '2026-11-24 20:35:12', '2026-11-24 20:35:12');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `roles`
+--
+
+CREATE TABLE `roles` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(60) NOT NULL,
+  `description` varchar(255) NOT NULL DEFAULT '',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `roles`
+--
+
+INSERT INTO `roles` (`id`, `name`, `description`, `created_at`) VALUES
+(1, 'ADMIN', 'Acceso total al panel administrativo, usuarios y seguridad.', '2026-11-23 10:42:59'),
+(2, 'OPERADOR', 'Gestion operativa completa: catalogo, almacenes, inventario y movimientos.', '2026-11-23 10:42:59'),
+(3, 'VENTAS', 'Lectura operativa para consulta de catalogo, inventario y reportes.', '2026-11-23 10:42:59'),
+(4, 'LECTOR', 'Consulta general del sistema sin acceso al centro de claves.', '2026-11-23 10:42:59');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `role_permissions`
+--
+
+CREATE TABLE `role_permissions` (
+  `role_id` int(10) UNSIGNED NOT NULL,
+  `permission_id` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `role_permissions`
+--
+
+INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES
+(1, 1),
+(1, 2),
+(1, 3),
+(1, 4),
+(1, 5),
+(1, 6),
+(1, 7),
+(1, 8),
+(1, 9),
+(1, 10),
+(1, 11),
+(1, 12),
+(1, 13),
+(1, 14),
+(1, 15),
+(1, 16),
+(1, 17),
+(1, 18),
+(1, 19),
+(1, 20),
+(1, 21),
+(1, 22),
+(1, 23),
+(1, 24),
+(1, 25),
+(1, 26),
+(1, 27),
+(1, 28),
+(1, 29),
+(1, 30),
+(1, 31),
+(1, 32),
+(1, 33),
+(1, 34),
+(1, 35),
+(1, 36),
+(1, 37),
+(1, 38),
+(1, 39),
+(1, 40),
+(1, 41),
+(1, 42),
+(1, 43),
+(1, 44),
+(1, 45),
+(1, 46),
+(1, 47),
+(2, 1),
+(2, 2),
+(2, 3),
+(2, 4),
+(2, 5),
+(2, 6),
+(2, 7),
+(2, 8),
+(2, 9),
+(2, 10),
+(2, 11),
+(2, 12),
+(2, 13),
+(2, 14),
+(2, 15),
+(2, 16),
+(2, 17),
+(2, 18),
+(2, 19),
+(2, 20),
+(2, 21),
+(2, 22),
+(2, 23),
+(2, 24),
+(2, 25),
+(2, 26),
+(2, 27),
+(2, 28),
+(2, 29),
+(2, 30),
+(2, 31),
+(2, 32),
+(2, 44),
+(2, 45),
+(2, 46),
+(2, 47),
+(3, 1),
+(3, 5),
+(3, 7),
+(3, 9),
+(3, 13),
+(3, 17),
+(3, 21),
+(3, 25),
+(3, 29),
+(3, 30),
+(3, 44),
+(4, 1),
+(4, 5),
+(4, 7),
+(4, 9),
+(4, 13),
+(4, 17),
+(4, 21),
+(4, 25),
+(4, 29),
+(4, 30),
+(4, 33),
+(4, 37),
+(4, 44);
 
 -- --------------------------------------------------------
 
@@ -555,7 +809,95 @@ INSERT INTO `ubicaciones` (`id`, `almacen_id`, `padre_id`, `idtipo_ubicacion`, `
 (3, 1, 2, 4, 'PAS-01', 'Pasillo 1', 'ZONA-A/PAS-01', 1, 1, '2026-10-29 22:22:09', '2026-10-29 22:22:09'),
 (4, 1, 3, 5, 'EST-01', 'Estante 1', 'ZONA-A/PAS-01/EST-01', 2, 1, '2026-10-29 22:22:09', '2026-10-29 22:22:09'),
 (5, 1, 4, 6, 'NIV-01', 'Nivel 1', 'ZONA-A/PAS-01/EST-01/NIV-01', 3, 1, '2026-10-29 22:22:09', '2026-10-29 22:22:09'),
-(6, 1, 5, 7, 'POS-01', 'Posicion 1', 'ZONA-A/PAS-01/EST-01/NIV-01/POS-01', 4, 1, '2026-10-29 22:22:09', '2026-10-29 22:22:09');
+(6, 1, 5, 7, 'POS-01', 'Posicion 1', 'ZONA-A/PAS-01/EST-01/NIV-01/POS-01', 4, 1, '2026-10-29 22:22:09', '2026-10-29 22:22:09'),
+(13, 6, NULL, 1, 'GEN', 'General', 'GEN', 0, 1, '2026-11-24 20:34:34', '2026-11-24 20:34:34');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `unidades`
+--
+
+CREATE TABLE `unidades` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(60) NOT NULL,
+  `abreviatura` varchar(20) NOT NULL,
+  `idestatus` int(11) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `unidades`
+--
+
+INSERT INTO `unidades` (`id`, `nombre`, `abreviatura`, `idestatus`, `created_at`, `updated_at`) VALUES
+(1, 'Unidad', 'UND', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(2, 'Pieza', 'PZA', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(3, 'Docena', 'DOC', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(4, 'Paquete', 'PAQ', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(5, 'Caja', 'CAJ', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(6, 'Kilogramo', 'KG', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(7, 'Gramo', 'G', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(8, 'Litro', 'L', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(9, 'Mililitro', 'ML', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59'),
+(10, 'Metro', 'M', 1, '2026-11-24 18:44:59', '2026-11-24 18:44:59');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `full_name` varchar(150) NOT NULL,
+  `email` varchar(190) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `is_staff` tinyint(1) NOT NULL DEFAULT 0,
+  `is_superuser` tinyint(1) NOT NULL DEFAULT 0,
+  `last_login` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `users`
+--
+
+INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `is_active`, `is_staff`, `is_superuser`, `last_login`, `created_at`, `updated_at`) VALUES
+(1, 'Wilmer Vargas', 'wilmere.vargas@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$WlNoV3kyUGVqZUJJUklCVg$3YBsArJK1BF3jprph0L2qcXEBy5FHFhmjyOr8pDDlAM', 1, 1, 1, '2026-11-24 16:12:38', '2026-11-23 10:42:59', '2026-11-24 16:12:38');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `user_permissions`
+--
+
+CREATE TABLE `user_permissions` (
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `permission_id` int(10) UNSIGNED NOT NULL,
+  `allowed` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `user_roles`
+--
+
+CREATE TABLE `user_roles` (
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `role_id` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `user_roles`
+--
+
+INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES
+(1, 1);
 
 -- --------------------------------------------------------
 
@@ -785,12 +1127,21 @@ ALTER TABLE `pedidos`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indices de la tabla `permissions`
+--
+ALTER TABLE `permissions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_permissions_code` (`code`),
+  ADD KEY `idx_permissions_module` (`module`);
+
+--
 -- Indices de la tabla `productos`
 --
 ALTER TABLE `productos`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_producto_sku_base` (`sku_base`),
   ADD UNIQUE KEY `uq_producto_codigo_barras` (`codigo_barras`),
+  ADD UNIQUE KEY `uq_producto_codigo_detalle` (`codigo_detalle`),
   ADD KEY `productos_ibfk_1` (`idcategoria`),
   ADD KEY `productos_ibfk_2` (`idsubcategoria`),
   ADD KEY `productos_ibfk_3` (`idmarca`),
@@ -798,7 +1149,10 @@ ALTER TABLE `productos`
   ADD KEY `idx_producto_modelo` (`idmodelo`),
   ADD KEY `idx_producto_color` (`idcolor`),
   ADD KEY `idx_producto_talla` (`idtalla`),
-  ADD KEY `idx_producto_base` (`producto_base_id`);
+  ADD KEY `idx_producto_base` (`producto_base_id`),
+  ADD KEY `idx_productos_idunidad` (`idunidad`),
+  ADD KEY `idx_producto_es_base` (`es_base`),
+  ADD KEY `idx_producto_codigo_producto` (`codigo_producto`);
 
 --
 -- Indices de la tabla `producto_almacen`
@@ -810,6 +1164,20 @@ ALTER TABLE `producto_almacen`
   ADD KEY `idx_pa_almacen` (`almacen_id`),
   ADD KEY `idx_pa_ubicacion` (`ubicacion_preferida_id`),
   ADD KEY `idx_pa_estatus` (`idestatus`);
+
+--
+-- Indices de la tabla `roles`
+--
+ALTER TABLE `roles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_roles_name` (`name`);
+
+--
+-- Indices de la tabla `role_permissions`
+--
+ALTER TABLE `role_permissions`
+  ADD PRIMARY KEY (`role_id`,`permission_id`),
+  ADD KEY `idx_role_permissions_permission` (`permission_id`);
 
 --
 -- Indices de la tabla `subcategorias`
@@ -846,6 +1214,38 @@ ALTER TABLE `ubicaciones`
   ADD KEY `idx_ubicacion_estatus` (`idestatus`);
 
 --
+-- Indices de la tabla `unidades`
+--
+ALTER TABLE `unidades`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_unidades_nombre` (`nombre`),
+  ADD UNIQUE KEY `uq_unidades_abreviatura` (`abreviatura`),
+  ADD KEY `idx_unidades_estatus` (`idestatus`);
+
+--
+-- Indices de la tabla `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_users_email` (`email`),
+  ADD KEY `idx_users_active` (`is_active`),
+  ADD KEY `idx_users_superuser` (`is_superuser`);
+
+--
+-- Indices de la tabla `user_permissions`
+--
+ALTER TABLE `user_permissions`
+  ADD PRIMARY KEY (`user_id`,`permission_id`),
+  ADD KEY `idx_user_permissions_permission` (`permission_id`);
+
+--
+-- Indices de la tabla `user_roles`
+--
+ALTER TABLE `user_roles`
+  ADD PRIMARY KEY (`user_id`,`role_id`),
+  ADD KEY `idx_user_roles_role` (`role_id`);
+
+--
 -- Indices de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
@@ -860,7 +1260,7 @@ ALTER TABLE `usuarios`
 -- AUTO_INCREMENT de la tabla `almacenes`
 --
 ALTER TABLE `almacenes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `carritos`
@@ -902,7 +1302,7 @@ ALTER TABLE `estatus`
 -- AUTO_INCREMENT de la tabla `inventario`
 --
 ALTER TABLE `inventario`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=529;
 
 --
 -- AUTO_INCREMENT de la tabla `items_carrito`
@@ -932,7 +1332,7 @@ ALTER TABLE `modelos`
 -- AUTO_INCREMENT de la tabla `movimientos_inventario`
 --
 ALTER TABLE `movimientos_inventario`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=535;
 
 --
 -- AUTO_INCREMENT de la tabla `pedidos`
@@ -941,16 +1341,28 @@ ALTER TABLE `pedidos`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=118;
 
 --
+-- AUTO_INCREMENT de la tabla `permissions`
+--
+ALTER TABLE `permissions`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+
+--
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=417;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `producto_almacen`
 --
 ALTER TABLE `producto_almacen`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=520;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=529;
+
+--
+-- AUTO_INCREMENT de la tabla `roles`
+--
+ALTER TABLE `roles`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `subcategorias`
@@ -974,7 +1386,19 @@ ALTER TABLE `tipos_ubicacion`
 -- AUTO_INCREMENT de la tabla `ubicaciones`
 --
 ALTER TABLE `ubicaciones`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT de la tabla `unidades`
+--
+ALTER TABLE `unidades`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT de la tabla `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
@@ -1057,6 +1481,7 @@ ALTER TABLE `productos`
   ADD CONSTRAINT `fk_producto_color` FOREIGN KEY (`idcolor`) REFERENCES `colores` (`id`),
   ADD CONSTRAINT `fk_producto_modelo` FOREIGN KEY (`idmodelo`) REFERENCES `modelos` (`id`),
   ADD CONSTRAINT `fk_producto_talla` FOREIGN KEY (`idtalla`) REFERENCES `tallas` (`id`),
+  ADD CONSTRAINT `fk_productos_unidad` FOREIGN KEY (`idunidad`) REFERENCES `unidades` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `productos_ibfk_1` FOREIGN KEY (`idcategoria`) REFERENCES `categorias` (`id`),
   ADD CONSTRAINT `productos_ibfk_2` FOREIGN KEY (`idsubcategoria`) REFERENCES `subcategorias` (`id`),
   ADD CONSTRAINT `productos_ibfk_3` FOREIGN KEY (`idmarca`) REFERENCES `marcas` (`id`),
@@ -1070,6 +1495,13 @@ ALTER TABLE `producto_almacen`
   ADD CONSTRAINT `fk_pa_estatus` FOREIGN KEY (`idestatus`) REFERENCES `estatus` (`id`),
   ADD CONSTRAINT `fk_pa_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_pa_ubicacion` FOREIGN KEY (`ubicacion_preferida_id`) REFERENCES `ubicaciones` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `role_permissions`
+--
+ALTER TABLE `role_permissions`
+  ADD CONSTRAINT `fk_role_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_role_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `subcategorias`
@@ -1098,6 +1530,20 @@ ALTER TABLE `ubicaciones`
   ADD CONSTRAINT `fk_ubicacion_estatus` FOREIGN KEY (`idestatus`) REFERENCES `estatus` (`id`),
   ADD CONSTRAINT `fk_ubicacion_padre` FOREIGN KEY (`padre_id`) REFERENCES `ubicaciones` (`id`),
   ADD CONSTRAINT `fk_ubicacion_tipo` FOREIGN KEY (`idtipo_ubicacion`) REFERENCES `tipos_ubicacion` (`id`);
+
+--
+-- Filtros para la tabla `user_permissions`
+--
+ALTER TABLE `user_permissions`
+  ADD CONSTRAINT `fk_user_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_user_permissions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `user_roles`
+--
+ALTER TABLE `user_roles`
+  ADD CONSTRAINT `fk_user_roles_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_user_roles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

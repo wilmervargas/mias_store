@@ -6,12 +6,6 @@ require_once __DIR__ . '/../models/Producto.php';
 
 class ProductoController
 {
-    /**
-     * GET /?url=productos
-     * Filtros: q, idcategoria, idmarca, idmodelo, idcolor, idtalla,
-     *          precioMin, precioMax, stockMin, stockMax, almacen, solo_agotados
-     * y ?todos=1 para incluir inactivos (Dashboard).
-     */
     public function listar(): void
     {
         try {
@@ -31,6 +25,7 @@ class ProductoController
                 'almacen'      => $_GET['almacen'] ?? '',
                 'solo_agotados' => $_GET['solo_agotados'] ?? '',
                 'estatus'      => $_GET['estatus'] ?? '',
+                'agrupado'     => $_GET['agrupado'] ?? '',
             ];
 
             responder(true, Producto::buscar($filtros, $soloActivos), 200);
@@ -39,7 +34,6 @@ class ProductoController
         }
     }
 
-    /** GET /?url=productos/{id} */
     public function mostrar(int $id): void
     {
         try {
@@ -53,7 +47,6 @@ class ProductoController
         }
     }
 
-    /** POST /?url=productos */
     public function crear(): void
     {
         try {
@@ -62,7 +55,7 @@ class ProductoController
                 responder(false, 'Cuerpo de peticion invalido. Se espera JSON', 400);
             }
 
-            $errores = $this->validar($datos);
+            $errores = $this->validar($datos, true);
             if (!empty($errores)) {
                 responder(false, $errores, 400);
             }
@@ -77,11 +70,6 @@ class ProductoController
         }
     }
 
-    /**
-     * PUT /?url=productos/{id}
-     * Actualizacion PARCIAL: fusiona lo enviado con el registro actual.
-     * Si se envia "stock" distinto al actual, se registra un ajuste de inventario.
-     */
     public function actualizar(int $id): void
     {
         try {
@@ -95,8 +83,37 @@ class ProductoController
                 responder(false, 'Cuerpo de peticion invalido. Se espera JSON', 400);
             }
 
+            // Compatibilidad: updates simples (reactivar/desactivar) sin filas.
+            $tieneFilas = isset($datos['filas']) || isset($datos['stock_inicial']) || isset($datos['almacen_id']) || isset($datos['precio']);
+            if (!$tieneFilas) {
+                $fusion = array_merge($actual, $datos);
+                $errores = $this->validarCabecera($fusion);
+                if (!empty($errores)) {
+                    responder(false, $errores, 400);
+                }
+                // Para cambios simples de estatus/campos base en SKU antiguo, usar update directo por fila.
+                $db = Database::conectar();
+                $campos = [];
+                $params = [':id' => $id];
+                foreach (['nombre','descripcion','idestatus','idcategoria','idsubcategoria','idmarca','idmodelo','idunidad','unidad_medida','imagen'] as $c) {
+                    if (array_key_exists($c, $datos)) {
+                        $campos[] = "$c = :$c";
+                        $params[":$c"] = $datos[$c];
+                    }
+                }
+                if ($campos) {
+                    $stmt = $db->prepare('UPDATE productos SET ' . implode(', ', $campos) . ' WHERE id = :id');
+                    $stmt->execute($params);
+                }
+                responder(true, ['mensaje' => 'Producto actualizado correctamente'], 200);
+            }
+
             $fusion  = array_merge($actual, $datos);
-            $errores = $this->validar($fusion);
+            // Mantener cabecera actual si no viene
+            foreach (['nombre','descripcion','idcategoria','idsubcategoria','idmarca','idmodelo','idunidad','unidad_medida','sku_base','imagen','idestatus'] as $k) {
+                if (!array_key_exists($k, $datos) && isset($actual[$k])) $fusion[$k] = $actual[$k];
+            }
+            $errores = $this->validar($fusion, false);
             if (!empty($errores)) {
                 responder(false, $errores, 400);
             }
@@ -108,7 +125,6 @@ class ProductoController
         }
     }
 
-    /** DELETE /?url=productos/{id}[&fisico=1] */
     public function eliminar(int $id): void
     {
         try {
@@ -128,9 +144,6 @@ class ProductoController
         }
     }
 
-    /**
-     * POST /?url=productos/{id}/imagen  (multipart/form-data)
-     */
     public function subirImagen(int $id): void
     {
         try {
@@ -175,23 +188,58 @@ class ProductoController
         }
     }
 
-    private function validar(?array $datos): array
+    private function validarCabecera(array $datos): array
     {
         $errores = [];
         if (empty($datos['nombre'])) $errores[] = 'El nombre del producto es obligatorio';
-        if (!isset($datos['precio']) || (float) $datos['precio'] <= 0) $errores[] = 'El precio debe ser mayor a 0';
-        if (isset($datos['costo']) && (float) $datos['costo'] < 0) $errores[] = 'El costo no puede ser negativo';
-        if (isset($datos['stock']) && $datos['stock'] !== '' && (int) $datos['stock'] < 0) {
-            $errores[] = 'El stock no puede ser negativo';
-        }
-        if (isset($datos['stock_inicial']) && (int) $datos['stock_inicial'] < 0) {
-            $errores[] = 'El stock inicial no puede ser negativo';
-        }
         if (empty($datos['idcategoria'])) $errores[] = 'Debes asignar una categoria valida';
         if (empty($datos['idmarca'])) $errores[] = 'Debes asignar una marca valida';
         if (!empty($datos['sku_base']) && !preg_match('/^[A-Za-z0-9._-]{3,64}$/', (string) $datos['sku_base'])) {
             $errores[] = 'El SKU solo admite letras, numeros, punto, guion y guion bajo (3 a 64 caracteres)';
         }
+        return $errores;
+    }
+
+    private function validar(?array $datos, bool $requiereFilas): array
+    {
+        $errores = $this->validarCabecera($datos ?? []);
+
+        $filas = $datos['filas'] ?? null;
+        if (!is_array($filas)) {
+            // Compatibilidad payload plano
+            $filas = [[
+                'almacen_id' => $datos['almacen_id'] ?? null,
+                'ubicacion_id' => $datos['ubicacion_id'] ?? null,
+                'idcolor' => $datos['idcolor'] ?? 1,
+                'idtalla' => $datos['idtalla'] ?? 1,
+                'codigo_barras' => $datos['codigo_barras'] ?? null,
+                'costo' => $datos['costo'] ?? 0,
+                'precio' => $datos['precio'] ?? null,
+                'preciofull' => $datos['preciofull'] ?? null,
+                'stock' => $datos['stock'] ?? ($datos['stock_inicial'] ?? 0),
+            ]];
+        }
+
+        if ($requiereFilas && count($filas) === 0) {
+            $errores[] = 'Debes agregar al menos una fila de almacen/variante';
+        }
+
+        $barcodes = [];
+        foreach ($filas as $i => $fila) {
+            $n = $i + 1;
+            if (!isset($fila['precio']) || (float) $fila['precio'] <= 0) $errores[] = "Fila {$n}: el precio debe ser mayor a 0";
+            if (isset($fila['costo']) && (float) $fila['costo'] < 0) $errores[] = "Fila {$n}: el costo no puede ser negativo";
+            $stock = $fila['stock'] ?? ($fila['stock_inicial'] ?? 0);
+            if ($stock !== '' && $stock !== null && (int) $stock < 0) $errores[] = "Fila {$n}: el stock no puede ser negativo";
+            if (empty($fila['almacen_id'])) $errores[] = "Fila {$n}: debes seleccionar un almacen";
+            $cb = trim((string) ($fila['codigo_barras'] ?? ''));
+            if ($cb !== '') {
+                $k = mb_strtolower($cb);
+                if (isset($barcodes[$k])) $errores[] = "Fila {$n}: el codigo de barras esta repetido en el formulario";
+                $barcodes[$k] = true;
+            }
+        }
+
         return $errores;
     }
 }
