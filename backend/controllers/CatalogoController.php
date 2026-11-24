@@ -45,6 +45,9 @@ class CatalogoController
             if (empty($datos['nombre'])) {
                 responder(false, 'El nombre es obligatorio', 400);
             }
+            if ($tabla === 'unidades' && empty($datos['abreviatura'])) {
+                responder(false, 'La abreviatura es obligatoria', 400);
+            }
             $id = Catalogo::crear($tabla, $datos);
             responder(true, ['id' => $id, 'mensaje' => 'Registro creado correctamente'], 201);
         } catch (Throwable $e) {

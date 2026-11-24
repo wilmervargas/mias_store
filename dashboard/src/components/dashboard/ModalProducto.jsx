@@ -23,6 +23,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
     idmodelo: productoEditar?.idmodelo || 1,
     idcolor: productoEditar?.idcolor || 1,
     idtalla: productoEditar?.idtalla || 1,
+    idunidad: productoEditar?.idunidad || 1,
     producto_base_id: productoEditar?.producto_base_id || '',
     unidad_medida: productoEditar?.unidad_medida || 'UND',
     imagen: productoEditar?.imagen || 'sin-foto.png',
@@ -38,6 +39,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
   const [modelos, setModelos] = useState([]);
   const [colores, setColores] = useState([]);
   const [tallas, setTallas] = useState([]);
+  const [unidades, setUnidades] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
   const [ubicaciones, setUbicaciones] = useState([]);
   const [archivoImagen, setArchivoImagen] = useState(null);
@@ -49,6 +51,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
     api.get('modelos').then((res) => setModelos(res.datos || []));
     api.get('colores').then((res) => setColores(res.datos || []));
     api.get('tallas').then((res) => setTallas(res.datos || []));
+    api.get('unidades').then((res) => setUnidades(res.datos || []));
     api.get('almacenes').then((res) => {
       const lista = res.datos || [];
       setAlmacenes(lista);
@@ -195,7 +198,22 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
             </Select>
           </Campo>
           <Campo label="Unidad de medida">
-            <Input value={formData.unidad_medida} onChange={(e) => set('unidad_medida', e.target.value)} />
+            <Select
+              value={formData.idunidad}
+              onChange={(e) => {
+                const id = Number(e.target.value);
+                const u = unidades.find((x) => Number(x.id) === id);
+                setFormData((prev) => ({
+                  ...prev,
+                  idunidad: id,
+                  unidad_medida: u?.abreviatura || prev.unidad_medida || 'UND',
+                }));
+              }}
+            >
+              {unidades.map((u) => (
+                <option key={u.id} value={u.id}>{u.nombre} ({u.abreviatura})</option>
+              ))}
+            </Select>
           </Campo>
         </div>
 

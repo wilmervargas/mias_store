@@ -13,7 +13,7 @@ class Producto
                     p.id, p.producto_base_id, p.nombre, p.descripcion,
                     p.precio, p.preciofull, p.costo, p.stock, p.imagen,
                     p.estrellas, p.idestatus, p.idcategoria, p.idsubcategoria,
-                    p.idmarca, p.idmodelo, p.idcolor, p.idtalla,
+                    p.idmarca, p.idmodelo, p.idcolor, p.idtalla, p.idunidad,
                     p.sku_base, p.codigo_barras, p.unidad_medida,
                     p.created_at, p.updated_at,
                     c.id AS idcategoria_ref, c.nombre AS categoria,
@@ -21,6 +21,7 @@ class Producto
                     mo.nombre AS modelo,
                     co.nombre AS color, co.codigo_hex AS color_hex,
                     t.nombre AS talla,
+                    un.nombre AS unidad, un.abreviatura AS unidad_abreviatura,
                     (SELECT GROUP_CONCAT(pa.sku_almacen ORDER BY pa.almacen_id SEPARATOR ', ')
                        FROM producto_almacen pa WHERE pa.producto_id = p.id) AS sku_almacen,
                     (SELECT GROUP_CONCAT(a.codigo ORDER BY a.id SEPARATOR ', ')
@@ -31,7 +32,8 @@ class Producto
                 LEFT JOIN marcas m     ON m.id = p.idmarca
                 LEFT JOIN modelos mo   ON mo.id = p.idmodelo
                 LEFT JOIN colores co   ON co.id = p.idcolor
-                LEFT JOIN tallas t     ON t.id = p.idtalla";
+                LEFT JOIN tallas t     ON t.id = p.idtalla
+                LEFT JOIN unidades un  ON un.id = p.idunidad";
     }
 
     public static function obtenerTodos(bool $soloActivos = true): array
@@ -170,13 +172,23 @@ class Producto
                 $sku = 'TMP-' . bin2hex(random_bytes(6));
             }
 
+            $idunidad = (int) ($datos['idunidad'] ?? 1);
+            $unidadMedida = trim((string) ($datos['unidad_medida'] ?? ''));
+            if ($idunidad > 0) {
+                $stmtU = $db->prepare("SELECT abreviatura FROM unidades WHERE id = :id LIMIT 1");
+                $stmtU->execute([':id' => $idunidad]);
+                $abrev = $stmtU->fetchColumn();
+                if ($abrev) $unidadMedida = (string) $abrev;
+            }
+            if ($unidadMedida === '') $unidadMedida = 'UND';
+
             $sql = "INSERT INTO productos
                     (producto_base_id, nombre, descripcion, precio, preciofull, costo,
-                     stock, idcategoria, idsubcategoria, idmarca, idmodelo, idcolor, idtalla,
+                     stock, idcategoria, idsubcategoria, idmarca, idmodelo, idcolor, idtalla, idunidad,
                      sku_base, codigo_barras, unidad_medida, estrellas, imagen, idestatus)
                     VALUES
                     (:producto_base_id, :nombre, :descripcion, :precio, :preciofull, :costo,
-                     0, :idcategoria, :idsubcategoria, :idmarca, :idmodelo, :idcolor, :idtalla,
+                     0, :idcategoria, :idsubcategoria, :idmarca, :idmodelo, :idcolor, :idtalla, :idunidad,
                      :sku_base, :codigo_barras, :unidad_medida, :estrellas, :imagen, :idestatus)";
             $stmt = $db->prepare($sql);
             $stmt->execute([
@@ -192,9 +204,10 @@ class Producto
                 ':idmodelo'         => (int) ($datos['idmodelo'] ?? 1),
                 ':idcolor'          => (int) ($datos['idcolor'] ?? 1),
                 ':idtalla'          => (int) ($datos['idtalla'] ?? 1),
+                ':idunidad'         => $idunidad,
                 ':sku_base'         => $sku,
                 ':codigo_barras'    => !empty($datos['codigo_barras']) ? $datos['codigo_barras'] : null,
-                ':unidad_medida'    => $datos['unidad_medida'] ?? 'UND',
+                ':unidad_medida'    => $unidadMedida,
                 ':estrellas'        => (string) ($datos['estrellas'] ?? '5'),
                 ':imagen'           => $datos['imagen'] ?? 'sin-foto.png',
                 ':idestatus'        => (int) ($datos['idestatus'] ?? 1),
@@ -249,6 +262,16 @@ class Producto
             $stmt->execute([':id' => $id]);
             $skuAnterior = $stmt->fetchColumn();
 
+            $idunidad = (int) ($datos['idunidad'] ?? 1);
+            $unidadMedida = trim((string) ($datos['unidad_medida'] ?? ''));
+            if ($idunidad > 0) {
+                $stmtU = $db->prepare("SELECT abreviatura FROM unidades WHERE id = :id LIMIT 1");
+                $stmtU->execute([':id' => $idunidad]);
+                $abrev = $stmtU->fetchColumn();
+                if ($abrev) $unidadMedida = (string) $abrev;
+            }
+            if ($unidadMedida === '') $unidadMedida = 'UND';
+
             $sql = "UPDATE productos SET
                         producto_base_id = :producto_base_id,
                         nombre           = :nombre,
@@ -262,6 +285,7 @@ class Producto
                         idmodelo         = :idmodelo,
                         idcolor          = :idcolor,
                         idtalla          = :idtalla,
+                        idunidad         = :idunidad,
                         sku_base         = :sku_base,
                         codigo_barras    = :codigo_barras,
                         unidad_medida    = :unidad_medida,
@@ -284,9 +308,10 @@ class Producto
                 ':idmodelo'         => (int) ($datos['idmodelo'] ?? 1),
                 ':idcolor'          => (int) ($datos['idcolor'] ?? 1),
                 ':idtalla'          => (int) ($datos['idtalla'] ?? 1),
+                ':idunidad'         => $idunidad,
                 ':sku_base'         => $datos['sku_base'],
                 ':codigo_barras'    => !empty($datos['codigo_barras']) ? $datos['codigo_barras'] : null,
-                ':unidad_medida'    => $datos['unidad_medida'] ?? 'UND',
+                ':unidad_medida'    => $unidadMedida,
                 ':estrellas'        => (string) ($datos['estrellas'] ?? '5'),
                 ':imagen'           => $datos['imagen'] ?? 'sin-foto.png',
                 ':idestatus'        => (int) ($datos['idestatus'] ?? 1),

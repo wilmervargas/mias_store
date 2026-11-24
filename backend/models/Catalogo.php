@@ -4,15 +4,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/Database.php';
 
 /**
- * Catalogos simples: modelos, colores y tallas.
+ * Catalogos simples: modelos, colores, tallas y unidades.
  * Se usa una sola clase con lista blanca de tablas y columnas.
  */
 class Catalogo
 {
     private const TABLAS = [
-        'modelos' => ['idmarca', 'nombre'],
-        'colores' => ['nombre', 'codigo_hex'],
-        'tallas'  => ['nombre', 'tipo', 'orden'],
+        'modelos'  => ['idmarca', 'nombre'],
+        'colores'  => ['nombre', 'codigo_hex'],
+        'tallas'   => ['nombre', 'tipo', 'orden'],
+        'unidades' => ['nombre', 'abreviatura'],
     ];
 
     private static function validar(string $tabla): array
@@ -68,6 +69,12 @@ class Catalogo
             $sql = "SELECT x.*,
                            (SELECT COUNT(*) FROM productos p WHERE p.idcolor = x.id) AS total_productos
                     FROM colores x
+                    {$whereSql}
+                    ORDER BY x.nombre";
+        } elseif ($tabla === 'unidades') {
+            $sql = "SELECT x.*,
+                           (SELECT COUNT(*) FROM productos p WHERE p.idunidad = x.id) AS total_productos
+                    FROM unidades x
                     {$whereSql}
                     ORDER BY x.nombre";
         } else {
@@ -147,9 +154,10 @@ class Catalogo
         self::validar($tabla);
 
         $columnaProducto = [
-            'modelos' => 'idmodelo',
-            'colores' => 'idcolor',
-            'tallas'  => 'idtalla',
+            'modelos'  => 'idmodelo',
+            'colores'  => 'idcolor',
+            'tallas'   => 'idtalla',
+            'unidades' => 'idunidad',
         ][$tabla];
 
         $db = Database::conectar();
@@ -173,9 +181,10 @@ class Catalogo
         self::validar($tabla);
 
         $columnaProducto = [
-            'modelos' => 'idmodelo',
-            'colores' => 'idcolor',
-            'tallas'  => 'idtalla',
+            'modelos'  => 'idmodelo',
+            'colores'  => 'idcolor',
+            'tallas'   => 'idtalla',
+            'unidades' => 'idunidad',
         ][$tabla];
 
         $db = Database::conectar();

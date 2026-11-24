@@ -14,6 +14,7 @@ const TABS = [
   { id: 'modelos', label: 'Modelos', singular: 'Modelo', icono: 'modelo' },
   { id: 'colores', label: 'Colores', singular: 'Color', icono: 'color' },
   { id: 'tallas', label: 'Tallas', singular: 'Talla', icono: 'talla' },
+  { id: 'unidades', label: 'Unidades', singular: 'Unidad', icono: 'inventario' },
 ];
 
 const formVacio = {
@@ -22,13 +23,14 @@ const formVacio = {
   codigo_hex: '#000000',
   tipo: 'letra',
   orden: 0,
+  abreviatura: '',
 };
 
-const CrudCatalogos = () => {
+const CrudCatalogos = ({ tabFijo = null }) => {
   const confirmar = useConfirm();
   const toast = useToast();
 
-  const [tab, setTab] = useState('modelos');
+  const [tab, setTab] = useState(tabFijo || 'modelos');
   const [items, setItems] = useState([]);
   const [marcas, setMarcas] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -78,6 +80,7 @@ const CrudCatalogos = () => {
       codigo_hex: item.codigo_hex || '#000000',
       tipo: item.tipo || 'letra',
       orden: item.orden ?? 0,
+      abreviatura: item.abreviatura || '',
     });
     setModalAbierto(true);
   };
@@ -95,6 +98,13 @@ const CrudCatalogos = () => {
     if (tab === 'tallas') {
       payload.tipo = form.tipo;
       payload.orden = Number(form.orden) || 0;
+    }
+    if (tab === 'unidades') {
+      if (!form.abreviatura.trim()) {
+        toast.error('La abreviatura es obligatoria');
+        return;
+      }
+      payload.abreviatura = form.abreviatura.trim().toUpperCase();
     }
 
     setGuardando(true);
@@ -199,31 +209,39 @@ const CrudCatalogos = () => {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-black text-gray-900 dark:text-white">Catálogos</h2>
-          <p className="text-[11px] text-gray-500 mt-0.5">Modelos, colores y tallas de los productos</p>
+          <h2 className="text-sm font-black text-gray-900 dark:text-white">
+            {tabFijo ? tabActual.label : 'Catálogos'}
+          </h2>
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            {tabFijo
+              ? `Gestiona las ${tabActual.label.toLowerCase()} disponibles para los productos`
+              : 'Modelos, colores, tallas y unidades de los productos'}
+          </p>
         </div>
         <Boton variante="primario" icono="mas" onClick={abrirCrear}>
           Nuevo {tabActual.singular}
         </Boton>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => cambiarTab(t.id)}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
-              tab === t.id
-                ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/20'
-                : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
-            }`}
-          >
-            <Icono nombre={t.icono} className="w-4 h-4" />
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {!tabFijo && (
+        <div className="flex flex-wrap gap-2">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => cambiarTab(t.id)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+                tab === t.id
+                  ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/20'
+                  : 'bg-gray-900 text-gray-400 hover:text-white border border-gray-800'
+              }`}
+            >
+              <Icono nombre={t.icono} className="w-4 h-4" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <BarraFiltros
         total={items.length}
@@ -286,6 +304,7 @@ const CrudCatalogos = () => {
             {tab === 'colores' && <Th>Muestra</Th>}
             {tab === 'tallas' && <Th>Tipo</Th>}
             {tab === 'tallas' && <Th align="right">Orden</Th>}
+            {tab === 'unidades' && <Th>Abreviatura</Th>}
             <Th align="right">Productos</Th>
             <Th>Estado</Th>
             <Th align="right">Acciones</Th>
@@ -309,6 +328,7 @@ const CrudCatalogos = () => {
               )}
               {tab === 'tallas' && <Td className="text-gray-400">{item.tipo}</Td>}
               {tab === 'tallas' && <Td align="right" className="text-gray-400">{item.orden}</Td>}
+              {tab === 'unidades' && <Td className="font-mono text-cyan-400">{item.abreviatura || '—'}</Td>}
               <Td align="right" className="text-gray-300">{item.total_productos}</Td>
               <Td><BadgeEstado activo={activo} /></Td>
               <Td align="right">
@@ -428,6 +448,19 @@ const CrudCatalogos = () => {
                   />
                 </Campo>
               </div>
+            )}
+
+            {tab === 'unidades' && (
+              <Campo label="Abreviatura" required hint="Ej: UND, PZA, DOC, KG. Se usa en listados y stock.">
+                <Input
+                  required
+                  value={form.abreviatura}
+                  onChange={(e) => setForm({ ...form, abreviatura: e.target.value.toUpperCase() })}
+                  placeholder="UND"
+                  className="font-mono uppercase"
+                  maxLength={20}
+                />
+              </Campo>
             )}
           </form>
         </Modal>

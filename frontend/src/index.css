@@ -4,12 +4,62 @@
 
 @theme {
   --font-sans: "Open Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", ui-serif, Georgia, serif;
+
+  /* Cremas y duraznos */
+  --color-cream-50: #fffbf7;
+  --color-cream-100: #fdf3ec;
+  --color-cream-200: #f7e6da;
+
+  --color-peach-100: #fce8dc;
+  --color-peach-200: #f7d3c1;
+  --color-peach-300: #efbba4;
+
+  /* Rosa principal */
+  --color-blush-50: #fdf2f6;
+  --color-blush-100: #fbe4ec;
+  --color-blush-200: #f7cddb;
+  --color-blush-300: #f2aec4;
+  --color-blush-400: #e58aa6;
+  --color-blush-500: #d65c84;
+  --color-blush-600: #b8446a;
+  --color-blush-700: #963553;
+
+  /* Ciruela para texto y modo oscuro */
+  --color-plum-200: #d8c3cc;
+  --color-plum-300: #bfa3af;
+  --color-plum-400: #a3808d;
+  --color-plum-500: #7a5566;
+  --color-plum-600: #5f3f4d;
+  --color-plum-700: #4a2f3b;
+  --color-plum-800: #38222c;
+  --color-plum-900: #2a1922;
+
+  /* Lavanda de apoyo */
+  --color-lavender-100: #f1e8f5;
+  --color-lavender-200: #e3d4ec;
+  --color-lavender-300: #d2bce0;
+
+  /* Verde salvia apagado para stock */
+  --color-sage-500: #5c8a73;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @layer base {
   html {
     @apply antialiased;
     font-size: calc(16px - 2pt);
+    scroll-behavior: smooth;
   }
 
   @media (min-width: 1024px) {
@@ -19,18 +69,79 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-800 min-h-screen;
+    min-height: 100vh;
+    color: var(--color-plum-800);
+    background-color: var(--color-cream-50);
+    background-image:
+      radial-gradient(58rem 38rem at 8% -8%, rgba(247, 211, 193, 0.6), transparent 62%),
+      radial-gradient(46rem 34rem at 95% 2%, rgba(227, 212, 236, 0.85), transparent 58%),
+      linear-gradient(180deg, #fffbf7 0%, #fdf4ee 48%, #fbece6 100%);
+    background-attachment: fixed;
+    transition: background-color 300ms ease, color 300ms ease;
   }
 
   .dark body {
-    @apply bg-slate-950 text-slate-100 min-h-screen;
+    color: var(--color-cream-50);
+    background-color: var(--color-plum-900);
+    background-image:
+      radial-gradient(52rem 38rem at 8% -6%, rgba(214, 92, 132, 0.24), transparent 62%),
+      radial-gradient(46rem 34rem at 95% 0%, rgba(163, 128, 141, 0.3), transparent 60%),
+      linear-gradient(180deg, #2a1922 0%, #33202b 55%, #3a2531 100%);
   }
 
   * {
-    @apply border-slate-200;
+    @apply border-cream-200;
   }
 
   .dark * {
-    @apply border-slate-800;
+    @apply border-plum-700;
+  }
+
+  ::selection {
+    background-color: rgba(229, 138, 166, 0.35);
+    color: var(--color-plum-800);
+  }
+
+  .dark ::selection {
+    background-color: rgba(229, 138, 166, 0.4);
+    color: var(--color-cream-50);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blush-500);
+    outline-offset: 2px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(214, 92, 132, 0.35) transparent;
+  }
+}
+
+@layer components {
+  .card-soft {
+    @apply rounded-[1.75rem] border border-cream-200/90 bg-white/85 shadow-[0_24px_60px_-42px_rgba(74,47,59,0.55)] backdrop-blur-sm;
+  }
+
+  .dark .card-soft {
+    @apply border-plum-700/80 bg-plum-800/70 shadow-[0_24px_60px_-42px_rgba(0,0,0,0.7)];
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blush-500 to-blush-400 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-blush-500/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blush-500/35 active:translate-y-0 disabled:pointer-events-none disabled:opacity-40;
+  }
+
+  .input-soft {
+    @apply w-full rounded-2xl border border-cream-200 bg-white/90 px-4 py-3 text-sm text-plum-800 shadow-sm outline-none transition placeholder:text-plum-400/70 focus:border-blush-400 focus:ring-4 focus:ring-blush-300/25;
+  }
+
+  .dark .input-soft {
+    @apply border-plum-700 bg-plum-900/50 text-cream-50 placeholder:text-cream-200/40 focus:border-blush-400;
+  }
+}
+
+@layer utilities {
+  .animate-rise {
+    animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }

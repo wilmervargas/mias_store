@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { useTheme } from '../context/ThemeContext';
 import { useCarrito } from '../context/CarritoContext';
 
 export default function ModalProducto({ producto, onClose }) {
-    const { isDark } = useTheme();
     const { agregarAlCarrito } = useCarrito();
     const [cantidad, setCantidad] = useState(1);
     const [agregado, setAgregado] = useState(false);
@@ -22,24 +20,24 @@ export default function ModalProducto({ producto, onClose }) {
     const ahorro = producto.preciofull ? (producto.preciofull - producto.precio) : 0;
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className={`border rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 ${isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-                }`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-plum-900/60 p-4 backdrop-blur-md">
+            <div className="animate-rise relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-cream-200 bg-cream-50 text-plum-800 shadow-2xl shadow-plum-900/30 dark:border-plum-700 dark:bg-plum-800 dark:text-cream-50">
                 {/* Botón Cerrar */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center font-bold text-sm cursor-pointer"
+                    className="absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/85 text-sm font-bold text-plum-600 shadow-sm backdrop-blur transition hover:bg-blush-500 hover:text-white dark:bg-plum-900/70 dark:text-cream-100 dark:hover:bg-blush-500"
+                    aria-label="Cerrar"
                 >
                     ✕
                 </button>
 
                 <div className="grid md:grid-cols-2">
                     {/* Imagen */}
-                    <div className="bg-slate-500/5 p-8 flex items-center justify-center border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-center border-b border-cream-200 bg-gradient-to-br from-cream-100 via-cream-50 to-peach-100 p-8 md:border-b-0 md:border-r dark:border-plum-700 dark:from-plum-900/70 dark:via-plum-800/50 dark:to-plum-700/50">
                         <img
                             src={`http://localhost:8000/imagenes/${producto.imagen}`}
                             alt={producto.nombre}
-                            className="max-h-64 object-contain"
+                            className="max-h-64 object-contain drop-shadow-sm"
                             onError={(e) => {
                                 e.target.src = 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=500';
                             }}
@@ -47,79 +45,86 @@ export default function ModalProducto({ producto, onClose }) {
                     </div>
 
                     {/* Información */}
-                    <div className="p-6 flex flex-col justify-between">
+                    <div className="flex flex-col justify-between p-6">
                         <div>
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] uppercase font-black tracking-widest text-pink-500">
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-blush-600 dark:text-blush-300">
                                     {producto.marca || "Mia's Store"}
                                 </span>
-                                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
-                                    }`}>
-                                    Stock: {producto.stock}
+                                <span className="rounded-full border border-cream-200 bg-white/80 px-2.5 py-1 font-mono text-[10px] text-plum-500 dark:border-plum-700 dark:bg-plum-900/50 dark:text-cream-200/70">
+                                    Stock: {producto.stock} {producto.unidad_abreviatura || producto.unidad_medida || ''}
                                 </span>
                             </div>
 
-                            <h2 className="text-xl font-bold mb-2 leading-snug">{producto.nombre}</h2>
+                            <h2 className="mb-2 font-display text-xl font-semibold leading-snug text-plum-800 dark:text-cream-50">
+                                {producto.nombre}
+                            </h2>
 
-                            <div className={`text-[11px] mb-4 space-y-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                <p>Categoría: <strong>{producto.categoria || 'General'}</strong></p>
+                            <div className="mb-4 space-y-1 text-[11px] text-plum-500 dark:text-cream-200/65">
+                                <p>Categoría: <strong className="font-semibold text-plum-700 dark:text-cream-100">{producto.categoria || 'General'}</strong></p>
                                 {producto.modelo && producto.modelo !== 'Sin modelo' && (
-                                    <p>Modelo: <strong>{producto.modelo}</strong></p>
+                                    <p>Modelo: <strong className="font-semibold text-plum-700 dark:text-cream-100">{producto.modelo}</strong></p>
                                 )}
                                 <div className="flex flex-wrap items-center gap-3">
                                     {producto.color && producto.color !== 'Sin color' && (
                                         <span className="flex items-center gap-1.5">
                                             Color:
-                                            <span className="inline-block w-3 h-3 rounded-full border border-slate-500/40" style={{ background: producto.color_hex || '#64748b' }} />
-                                            <strong>{producto.color}</strong>
+                                            <span
+                                                className="inline-block h-3 w-3 rounded-full ring-1 ring-plum-300/50"
+                                                style={{ background: producto.color_hex || '#cbb4bd' }}
+                                            />
+                                            <strong className="font-semibold text-plum-700 dark:text-cream-100">{producto.color}</strong>
                                         </span>
                                     )}
                                     {producto.talla && producto.talla !== 'Sin talla' && (
-                                        <span>Talla: <strong>{producto.talla}</strong></span>
+                                        <span>Talla: <strong className="font-semibold text-plum-700 dark:text-cream-100">{producto.talla}</strong></span>
                                     )}
                                 </div>
                                 {producto.sku_base && (
                                     <p className="font-mono text-[10px]">
-                                        SKU: <strong>{producto.sku_base}</strong>
+                                        SKU: <strong className="font-semibold">{producto.sku_base}</strong>
                                         {producto.sku_almacen && (
-                                            <span className="text-slate-500"> · {String(producto.sku_almacen).split(',')[0]}</span>
+                                            <span className="text-plum-400 dark:text-cream-200/40"> · {String(producto.sku_almacen).split(',')[0]}</span>
                                         )}
                                     </p>
                                 )}
                             </div>
 
                             {/* Precios */}
-                            <div className={`p-4 rounded-2xl border mb-4 ${isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50 border-slate-200'
-                                }`}>
+                            <div className="mb-4 rounded-2xl border border-cream-200 bg-white/70 p-4 dark:border-plum-700 dark:bg-plum-900/40">
                                 <div className="flex items-baseline gap-3">
-                                    <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">${producto.precio}</span>
+                                    <span className="font-display text-3xl font-semibold text-plum-800 dark:text-cream-50">
+                                        ${producto.precio}
+                                    </span>
                                     {producto.preciofull && (
-                                        <span className="text-sm text-slate-400 line-through">${producto.preciofull}</span>
+                                        <span className="text-sm text-plum-400 line-through dark:text-cream-200/40">
+                                            ${producto.preciofull}
+                                        </span>
                                     )}
                                 </div>
                                 {ahorro > 0 && (
-                                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block mt-1">
-                                        🎉 ¡Ahorras ${ahorro.toFixed(2)} con Mia's Store!
+                                    <span className="mt-1 block text-[11px] font-semibold text-sage-500 dark:text-emerald-300">
+                                        🌸 Ahorras ${Number(ahorro).toFixed(2)} con Mia&apos;s Store
                                     </span>
                                 )}
                             </div>
                         </div>
 
-                        {/* Controles de Compra */}
+                        {/* Controles de compra */}
                         <div>
-                            <div className="flex items-center gap-3 mb-4">
-                                <span className="text-xs font-semibold">Cantidad:</span>
-                                <div className="flex items-center border border-slate-300 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <div className="mb-4 flex items-center gap-3">
+                                <span className="text-xs font-semibold text-plum-600 dark:text-cream-200/80">Cantidad:</span>
+                                <div className="flex items-center overflow-hidden rounded-full border border-cream-200 bg-white/80 dark:border-plum-700 dark:bg-plum-900/40">
                                     <button
                                         onClick={() => setCantidad(Math.max(1, cantidad - 1))}
-                                        className="px-3 py-1.5 hover:bg-slate-500/10 font-bold"
+                                        className="px-3 py-1.5 font-bold text-plum-600 transition hover:bg-blush-100 dark:text-cream-100 dark:hover:bg-plum-700"
                                     >
                                         -
                                     </button>
-                                    <span className="px-3 py-1.5 text-xs font-mono font-bold">{cantidad}</span>
+                                    <span className="px-3 py-1.5 font-mono text-xs font-bold">{cantidad}</span>
                                     <button
                                         onClick={() => setCantidad(Math.min(Number(producto.stock) || 1, cantidad + 1))}
-                                        className="px-3 py-1.5 hover:bg-slate-500/10 font-bold"
+                                        className="px-3 py-1.5 font-bold text-plum-600 transition hover:bg-blush-100 dark:text-cream-100 dark:hover:bg-plum-700"
                                     >
                                         +
                                     </button>
@@ -129,11 +134,15 @@ export default function ModalProducto({ producto, onClose }) {
                             <button
                                 onClick={handleAgregar}
                                 disabled={agregado || Number(producto.stock) === 0}
-                                className={`w-full py-3 rounded-[6px] font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${agregado ? 'bg-emerald-600 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20'}`}
+                                className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold text-white transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                                    agregado
+                                        ? 'bg-sage-500'
+                                        : 'bg-gradient-to-r from-blush-500 to-blush-400 shadow-lg shadow-blush-500/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blush-500/35'
+                                }`}
                             >
                                 {Number(producto.stock) === 0
                                     ? 'Sin stock disponible'
-                                    : agregado ? '✅ ¡Añadido al Carrito!' : '🛒 Agregar al Carrito'}
+                                    : agregado ? '✅ ¡Añadido al carrito!' : '🛒 Agregar al carrito'}
                             </button>
                         </div>
                     </div>

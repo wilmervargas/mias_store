@@ -6,6 +6,8 @@ import CrudMarcas from './CrudMarcas';
 import CrudAlmacenes from './CrudAlmacenes';
 import CrudUbicaciones from './CrudUbicaciones';
 import CrudCatalogos from './CrudCatalogos';
+
+const CrudUnidades = () => <CrudCatalogos tabFijo="unidades" />;
 import CrudInventario from './CrudInventario';
 import CrudMovimientos from './CrudMovimientos';
 import PanelReportes from './PanelReportes';
@@ -62,6 +64,12 @@ const MODULOS = {
     componente: CrudCatalogos,
     titulo: 'Modelos, colores y tallas',
     descripcion: 'Gestiona los atributos que definen las variantes de tus productos.',
+    grupo: 'Catálogos',
+  },
+  unidades: {
+    componente: CrudUnidades,
+    titulo: 'Unidades de medida',
+    descripcion: 'Gestiona las unidades usadas por los productos: pieza, docena, paquete, kilogramo, etc.',
     grupo: 'Catálogos',
   },
   reportes: {

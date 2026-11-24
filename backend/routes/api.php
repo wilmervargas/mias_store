@@ -267,9 +267,9 @@ if ($metodo === 'DELETE' && preg_match('#^(?:api/)?ubicaciones/([0-9]+)$#', $url
 }
 
 // ==============================================================
-// 6. CATALOGOS (modelos, colores, tallas)
+// 6. CATALOGOS (modelos, colores, tallas, unidades)
 // ==============================================================
-foreach (['modelos', 'colores', 'tallas'] as $catalogo) {
+foreach (['modelos', 'colores', 'tallas', 'unidades'] as $catalogo) {
     if ($metodo === 'GET' && preg_match('#^(?:api/)?' . $catalogo . '/([0-9]+)$#', $url, $m)) {
         $ctrlCatal->mostrar($catalogo, (int) $m[1]);
         exit;

@@ -61,10 +61,15 @@ INSERT IGNORE INTO permissions (code, module, description) VALUES
 ('marcas.editar',          'marcas',     'Editar marcas'),
 ('marcas.eliminar',        'marcas',     'Eliminar o desactivar marcas'),
 -- Catalogos auxiliares
-('catalogos.ver',          'catalogos',  'Ver modelos, colores y tallas'),
-('catalogos.crear',        'catalogos',  'Crear modelos, colores y tallas'),
-('catalogos.editar',       'catalogos',  'Editar modelos, colores y tallas'),
-('catalogos.eliminar',     'catalogos',  'Eliminar modelos, colores y tallas'),
+('catalogos.ver',          'catalogos',  'Ver modelos, colores, tallas y unidades'),
+('catalogos.crear',        'catalogos',  'Crear modelos, colores, tallas y unidades'),
+('catalogos.editar',       'catalogos',  'Editar modelos, colores, tallas y unidades'),
+('catalogos.eliminar',     'catalogos',  'Eliminar modelos, colores, tallas y unidades'),
+-- Unidades de medida
+('unidades.ver',           'unidades',   'Ver unidades de medida'),
+('unidades.crear',         'unidades',   'Crear unidades de medida'),
+('unidades.editar',        'unidades',   'Editar unidades de medida'),
+('unidades.eliminar',      'unidades',   'Eliminar o desactivar unidades de medida'),
 -- Reportes
 ('reportes.ver',           'reportes',   'Ver reportes e indicadores'),
 -- WhatsApp
@@ -114,7 +119,7 @@ WHERE r.name = 'VENTAS'
   AND p.code LIKE '%.ver'
   AND p.module IN (
       'productos', 'inventario', 'movimientos', 'almacenes', 'ubicaciones',
-      'categorias', 'marcas', 'catalogos', 'reportes', 'whatsapp'
+      'categorias', 'marcas', 'catalogos', 'unidades', 'reportes', 'whatsapp'
   );
 
 -- LECTOR: todos los .ver excepto el centro de seguridad

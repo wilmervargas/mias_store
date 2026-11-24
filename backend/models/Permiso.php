@@ -15,6 +15,7 @@ class Permiso
         'categorias'  => 'Categorias',
         'marcas'      => 'Marcas',
         'catalogos'   => 'Catalogos (modelos, colores y tallas)',
+        'unidades'    => 'Unidades de medida',
         'reportes'    => 'Reportes',
         'whatsapp'    => 'WhatsApp',
         'usuarios'    => 'Usuarios y cuentas',

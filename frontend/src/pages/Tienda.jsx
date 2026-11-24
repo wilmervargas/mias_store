@@ -1,29 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ModalProducto from '../components/ModalProducto';
-import { useTheme } from '../context/ThemeContext';
 import { useCarrito } from '../context/CarritoContext';
 
-function PageHeader({ title, description }) {
-  return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold">{title}</h1>
-        {description ? <p className="mt-1 max-w-3xl text-sm text-slate-500 dark:text-slate-400">{description}</p> : null}
-      </div>
-    </div>
-  );
-}
-
-function Card({ children, className = '', isDark }) {
-  return (
-    <div className={`rounded-lg border shadow-md ${isDark ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'} ${className}`}>
-      {children}
-    </div>
-  );
-}
-
 export default function Tienda() {
-  const { isDark } = useTheme();
   const { agregarAlCarrito } = useCarrito();
 
   const [productos, setProductos] = useState([]);
@@ -108,40 +87,61 @@ export default function Tienda() {
 
   const stockTotalGrupo = (grupo) => grupo.variantes.reduce((acc, v) => acc + Number(v.stock || 0), 0);
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Tienda"
-        description="Catálogo de productos con búsqueda, filtros por categoría, selección de variantes y carrito."
-      />
+  const etiquetaArticulos = grupos.length === 1 ? 'artículo' : 'artículos';
+  const etiquetaCombinaciones = productosFiltrados.length === 1 ? 'combinación' : 'combinaciones';
 
-      <Card isDark={isDark} className="p-5">
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
-            <div className="lg:col-span-2">
-              <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Buscar producto</label>
-              <input
-                type="text"
-                placeholder="Buscar por producto, marca, modelo o SKU..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2.5 text-sm shadow-sm transition focus:outline-none focus:ring-2 ${
-                  isDark
-                    ? 'border-slate-700 bg-slate-950 text-slate-100 placeholder:text-slate-500 focus:border-pink-400 focus:ring-pink-500/20'
-                    : 'border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:border-pink-500 focus:ring-pink-100'
-                }`}
-              />
-            </div>
-            <div>
-              <label className={`mb-1.5 block text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Resumen</label>
-              <div className={`rounded-lg border px-3 py-2.5 text-sm ${isDark ? 'border-slate-700 bg-slate-950 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
-                {grupos.length} artículos · {productosFiltrados.length} combinaciones
-              </div>
-            </div>
+  return (
+    <div className="space-y-8">
+      {/* Hero con bienvenida y buscador */}
+      <section className="animate-rise relative overflow-hidden rounded-[2rem] border border-cream-200/80 bg-gradient-to-br from-cream-50 via-peach-100/70 to-lavender-100/80 p-6 shadow-[0_30px_70px_-45px_rgba(74,47,59,0.6)] sm:p-10 dark:border-plum-700/70 dark:from-plum-800 dark:via-plum-800/90 dark:to-plum-700/80">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-blush-300/30 blur-2xl dark:bg-blush-500/10" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-20 left-1/3 h-56 w-56 rounded-full bg-lavender-200/60 blur-3xl dark:bg-plum-600/20" />
+
+        <div className="relative grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-blush-300/60 bg-white/70 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] text-blush-600 dark:border-blush-400/30 dark:bg-plum-900/40 dark:text-blush-300">
+              ✨ Catálogo 2026
+            </span>
+            <h1 className="mt-4 font-display text-3xl font-semibold leading-tight text-plum-800 sm:text-4xl lg:text-5xl dark:text-cream-50">
+              Bienvenida a{' '}
+              <span className="text-blush-600 dark:text-blush-300">Mia&apos;s Store</span>
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-plum-500 dark:text-cream-200/70">
+              Tecnología, hogar y línea blanca seleccionados para consentirte. Encuentra tu favorito,
+              elige color y talla, y añádelo al carrito.
+            </p>
           </div>
 
+          <div className="space-y-3">
+            <label htmlFor="buscador" className="block text-[10px] font-bold uppercase tracking-[0.24em] text-plum-400 dark:text-cream-200/60">
+              Buscar producto
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base">🔍</span>
+              <input
+                id="buscador"
+                type="text"
+                placeholder="Producto, marca, modelo o SKU..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className="w-full rounded-full border border-cream-200 bg-white/90 py-3 pl-11 pr-4 text-sm text-plum-800 shadow-sm outline-none transition placeholder:text-plum-400/70 focus:border-blush-400 focus:ring-4 focus:ring-blush-300/25 dark:border-plum-700 dark:bg-plum-900/50 dark:text-cream-50 dark:placeholder:text-cream-200/40 dark:focus:border-blush-400"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-plum-400 dark:text-cream-200/60">
+              <span className="rounded-full bg-white/70 px-2.5 py-1 dark:bg-plum-900/40">{grupos.length} {etiquetaArticulos}</span>
+              <span className="rounded-full bg-white/70 px-2.5 py-1 dark:bg-plum-900/40">{productosFiltrados.length} {etiquetaCombinaciones}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Filtros por categoría */}
+      <section className="card-soft p-5">
+        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <p className={`mb-2 text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Categorías</p>
+            <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.24em] text-plum-400 dark:text-cream-200/60">
+              Categorías
+            </p>
             <div className="flex flex-wrap gap-2">
               {categorias.map((cat) => {
                 const activa = categoriaActiva === cat;
@@ -149,12 +149,10 @@ export default function Tienda() {
                   <button
                     key={cat}
                     onClick={() => setCategoriaActiva(cat)}
-                    className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${
+                    className={`rounded-full border px-4 py-2 text-xs font-semibold transition-all ${
                       activa
-                        ? 'bg-pink-500 text-white border-pink-500'
-                        : isDark
-                          ? 'bg-slate-950 text-slate-300 border-slate-700 hover:bg-slate-800'
-                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                        ? 'border-transparent bg-gradient-to-r from-blush-500 to-blush-400 text-white shadow-lg shadow-blush-500/30'
+                        : 'border-cream-200 bg-white/80 text-plum-600 hover:border-blush-300 hover:text-blush-600 dark:border-plum-700 dark:bg-plum-800/60 dark:text-cream-200/80 dark:hover:border-blush-400/60 dark:hover:text-blush-300'
                     }`}
                   >
                     {cat}
@@ -163,35 +161,65 @@ export default function Tienda() {
               })}
             </div>
           </div>
-        </div>
-      </Card>
 
+          <div className="flex items-center gap-2 rounded-2xl border border-cream-200 bg-cream-50/80 px-4 py-3 text-xs text-plum-500 dark:border-plum-700 dark:bg-plum-900/40 dark:text-cream-200/70">
+            <span className="text-base">🛍️</span>
+            <span>
+              <strong className="font-semibold text-plum-700 dark:text-cream-100">{grupos.length}</strong> {etiquetaArticulos} disponibles
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* Cargando */}
       {cargando && (
-        <Card isDark={isDark} className="p-16 text-center">
-          <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className={`font-mono text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Consultando API de PHP (http://localhost:8000)...</p>
-        </Card>
+        <div className="space-y-4">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-blush-500 dark:text-blush-300">
+            Cargando catálogo...
+          </p>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="card-soft overflow-hidden p-3">
+                <div className="aspect-square animate-pulse rounded-[1.35rem] bg-cream-100 dark:bg-plum-700/50" />
+                <div className="space-y-2 p-3">
+                  <div className="h-3 w-4/5 animate-pulse rounded-full bg-cream-100 dark:bg-plum-700/50" />
+                  <div className="h-3 w-2/5 animate-pulse rounded-full bg-cream-100/80 dark:bg-plum-700/40" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
+      {/* Error */}
       {error && (
-        <Card isDark={isDark} className="p-6 border-rose-300 dark:border-rose-500/30">
-          <h3 className="text-rose-600 dark:text-rose-400 font-bold mb-2">Error de conexión</h3>
-          <p className={`text-xs mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{error}</p>
-          <span className={`text-[10px] font-mono ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-            Verifica tener "php -S localhost:8000" corriendo en backend/.
+        <div className="card-soft border-blush-200 p-6 dark:border-blush-500/30">
+          <h3 className="mb-2 font-display text-lg font-semibold text-blush-600 dark:text-blush-300">
+            No pudimos conectar con la tienda
+          </h3>
+          <p className="mb-2 text-xs text-plum-500 dark:text-cream-200/70">{error}</p>
+          <span className="text-[10px] font-mono text-plum-400 dark:text-cream-200/40">
+            Verifica tener &quot;php -S localhost:8000&quot; corriendo en backend/.
           </span>
-        </Card>
+        </div>
       )}
 
       {!cargando && !error && (
         <>
           {grupos.length === 0 ? (
-            <Card isDark={isDark} className="p-10 text-center">
-              <p className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>No hay productos para mostrar</p>
-              <p className={`mt-1 text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Ajusta la búsqueda o la categoría seleccionada.</p>
-            </Card>
+            <div className="card-soft p-12 text-center">
+              <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-blush-100 text-2xl dark:bg-plum-700/60">
+                🌸
+              </div>
+              <p className="font-display text-lg font-semibold text-plum-800 dark:text-cream-50">
+                No hay productos para mostrar
+              </p>
+              <p className="mt-1 text-sm text-plum-500 dark:text-cream-200/60">
+                Ajusta la búsqueda o la categoría seleccionada.
+              </p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {grupos.map((grupo) => {
                 const prod = varianteDe(grupo);
                 const stockGrupo = stockTotalGrupo(grupo);
@@ -200,126 +228,140 @@ export default function Tienda() {
                 const tieneVariantes = grupo.variantes.length > 1;
 
                 return (
-                  <Card
+                  <article
                     key={grupo.clave}
-                    isDark={isDark}
-                    className={`p-4 flex flex-col justify-between transition-all duration-300 hover:border-pink-400/50 ${isDark ? 'hover:border-pink-500/40' : ''}`}
+                    className="group flex flex-col overflow-hidden rounded-[1.75rem] border border-cream-200/90 bg-white/85 shadow-[0_22px_55px_-40px_rgba(74,47,59,0.55)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-blush-300/80 hover:shadow-[0_30px_65px_-32px_rgba(214,92,132,0.45)] dark:border-plum-700/80 dark:bg-plum-800/70 dark:hover:border-blush-400/40"
                   >
-                    <div className={`relative aspect-square rounded-2xl p-4 flex items-center justify-center overflow-hidden mb-3 ${isDark ? 'bg-slate-950/60' : 'bg-slate-50'}`}>
+                    <div className="relative m-3 mb-0 aspect-square overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-cream-100 via-cream-50 to-peach-100 dark:from-plum-900/70 dark:via-plum-800/50 dark:to-plum-700/40">
                       <img
                         src={`http://localhost:8000/imagenes/${prod.imagen}`}
                         alt={prod.nombre}
-                        className="max-h-full max-w-full object-contain hover:scale-105 transition-all duration-300"
+                        className="absolute inset-0 h-full w-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
                         onError={(e) => {
                           e.target.src = 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=500';
                         }}
                       />
-                      <span className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-bold text-pink-200 uppercase">
+                      <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-blush-600 shadow-sm backdrop-blur dark:bg-plum-900/75 dark:text-blush-300">
                         {prod.marca || "Mia's Store"}
                       </span>
                       {stockGrupo === 0 && (
-                        <span className="absolute top-2.5 right-2.5 bg-rose-600 px-2 py-0.5 rounded-md text-[9px] font-bold text-white uppercase">
+                        <span className="absolute right-3 top-3 rounded-full bg-blush-600 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white shadow-sm">
                           Agotado
                         </span>
                       )}
                     </div>
 
-                    <div>
-                      <h3 className={`font-bold text-xs line-clamp-2 mb-1 ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
-                        {prod.nombre}
-                      </h3>
-                      <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {prod.categoria || 'General'}
-                        {prod.modelo && prod.modelo !== 'Sin modelo' ? ` · ${prod.modelo}` : ''}
-                      </span>
+                    <div className="flex flex-1 flex-col gap-2.5 p-4">
+                      <div>
+                        <h3 className="line-clamp-2 font-display text-[15px] font-semibold leading-snug text-plum-800 dark:text-cream-50">
+                          {prod.nombre}
+                        </h3>
+                        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-plum-400 dark:text-cream-200/55">
+                          {prod.categoria || 'General'}
+                          {prod.modelo && prod.modelo !== 'Sin modelo' ? ` · ${prod.modelo}` : ''}
+                        </p>
+                      </div>
 
                       {tieneVariantes && (
-                        <div className="mt-2 space-y-1.5">
+                        <div className="space-y-1.5">
                           {colores.length > 1 && (
-                            <div className="flex flex-wrap gap-1">
-                              {colores.map((v) => (
-                                <button
-                                  key={`c-${v.idcolor}`}
-                                  type="button"
-                                  title={v.color}
-                                  onClick={() => elegirColor(grupo, v.idcolor)}
-                                  className={`w-4 h-4 rounded-full border-2 transition-all ${
-                                    Number(prod.idcolor) === Number(v.idcolor) ? 'border-pink-500 scale-110' : isDark ? 'border-slate-600' : 'border-slate-300'
-                                  }`}
-                                  style={{ background: v.color_hex || '#64748b' }}
-                                />
-                              ))}
+                            <div className="flex flex-wrap gap-1.5">
+                              {colores.map((v) => {
+                                const activo = Number(prod.idcolor) === Number(v.idcolor);
+                                return (
+                                  <button
+                                    key={`c-${v.idcolor}`}
+                                    type="button"
+                                    title={v.color}
+                                    onClick={() => elegirColor(grupo, v.idcolor)}
+                                    className={`h-5 w-5 rounded-full border-2 border-white shadow-sm transition-transform ${
+                                      activo
+                                        ? 'scale-110 ring-2 ring-blush-500 ring-offset-2 ring-offset-white dark:ring-offset-plum-800'
+                                        : 'ring-1 ring-cream-200 hover:scale-110 dark:ring-plum-600'
+                                    }`}
+                                    style={{ background: v.color_hex || '#cbb4bd' }}
+                                  />
+                                );
+                              })}
                             </div>
                           )}
                           {tallas.length > 1 && (
-                            <div className="flex flex-wrap gap-1">
-                              {tallas.map((v) => (
-                                <button
-                                  key={`t-${v.idtalla}`}
-                                  type="button"
-                                  onClick={() => elegirTalla(grupo, v.idtalla)}
-                                  className={`px-1.5 py-0.5 rounded text-[9px] font-bold border transition-all ${
-                                    Number(prod.idtalla) === Number(v.idtalla)
-                                      ? 'bg-pink-500 text-white border-pink-500'
-                                      : isDark ? 'border-slate-700 text-slate-400' : 'border-slate-300 text-slate-600'
-                                  }`}
-                                >
-                                  {v.talla}
-                                </button>
-                              ))}
+                            <div className="flex flex-wrap gap-1.5">
+                              {tallas.map((v) => {
+                                const activo = Number(prod.idtalla) === Number(v.idtalla);
+                                return (
+                                  <button
+                                    key={`t-${v.idtalla}`}
+                                    type="button"
+                                    onClick={() => elegirTalla(grupo, v.idtalla)}
+                                    className={`rounded-full border px-2 py-0.5 text-[10px] font-bold transition-all ${
+                                      activo
+                                        ? 'border-blush-500 bg-blush-500 text-white shadow-sm'
+                                        : 'border-cream-200 bg-white/80 text-plum-500 hover:border-blush-300 dark:border-plum-700 dark:bg-plum-900/40 dark:text-cream-200/70'
+                                    }`}
+                                  >
+                                    {v.talla}
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] font-medium text-plum-400 dark:text-cream-200/55">
                         {prod.color && prod.color !== 'Sin color' && (
-                          <span className={`text-[9px] flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            <span className="inline-block w-2 h-2 rounded-full border border-slate-500/40" style={{ background: prod.color_hex || '#64748b' }} />
+                          <span className="flex items-center gap-1">
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full ring-1 ring-plum-300/50"
+                              style={{ background: prod.color_hex || '#cbb4bd' }}
+                            />
                             {prod.color}
                           </span>
                         )}
                         {prod.talla && prod.talla !== 'Sin talla' && (
-                          <span className={`text-[9px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Talla {prod.talla}</span>
+                          <span>Talla {prod.talla}</span>
                         )}
-                        <span className={`text-[9px] font-mono ${stockGrupo === 0 ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                          Stock: {prod.stock}
+                        <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${
+                          stockGrupo === 0
+                            ? 'bg-blush-100 text-blush-600 dark:bg-blush-600/20 dark:text-blush-300'
+                            : 'bg-sage-500/10 text-sage-500 dark:bg-sage-500/15 dark:text-emerald-300'
+                        }`}>
+                          Stock: {prod.stock} {prod.unidad_abreviatura || prod.unidad_medida || ''}
                         </span>
                       </div>
-                    </div>
 
-                    <div className={`mt-4 pt-3 border-t flex items-center justify-between ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                      <div>
-                        <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">${prod.precio}</span>
-                        {prod.preciofull && Number(prod.preciofull) > 0 && (
-                          <span className={`text-[10px] line-through block ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                            ${prod.preciofull}
+                      <div className="mt-auto flex items-end justify-between gap-2 border-t border-cream-200/80 pt-3 dark:border-plum-700/70">
+                        <div>
+                          <span className="font-display text-xl font-semibold text-plum-800 dark:text-cream-50">
+                            ${prod.precio}
                           </span>
-                        )}
-                      </div>
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => setProductoModal(prod)}
-                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${
-                            isDark
-                              ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                              : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
-                          }`}
-                          title="Ver detalle"
-                        >
-                          Ver
-                        </button>
-                        <button
-                          onClick={() => agregarAlCarrito(prod, 1)}
-                          disabled={Number(prod.stock) === 0}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-xs font-bold transition-all"
-                          title="Añadir al carrito"
-                        >
-                          + Carrito
-                        </button>
+                          {prod.preciofull && Number(prod.preciofull) > 0 && (
+                            <span className="block text-[10px] line-through text-plum-400 dark:text-cream-200/40">
+                              ${prod.preciofull}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => setProductoModal(prod)}
+                            className="rounded-full border border-cream-200 bg-white/80 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-plum-600 transition hover:border-blush-300 hover:text-blush-600 dark:border-plum-700 dark:bg-plum-900/50 dark:text-cream-100 dark:hover:border-blush-400/60 dark:hover:text-blush-300"
+                            title="Ver detalle"
+                          >
+                            Ver
+                          </button>
+                          <button
+                            onClick={() => agregarAlCarrito(prod, 1)}
+                            disabled={Number(prod.stock) === 0}
+                            className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blush-500 to-blush-400 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-white shadow-md shadow-blush-500/25 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blush-500/35 disabled:pointer-events-none disabled:opacity-40"
+                            title="Añadir al carrito"
+                          >
+                            🛒 Añadir
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </Card>
+                  </article>
                 );
               })}
             </div>

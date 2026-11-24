@@ -9,6 +9,7 @@ export const ACCESO_MODULO = {
   categorias: 'categorias.ver',
   marcas: 'marcas.ver',
   catalogos: 'catalogos.ver',
+  unidades: 'unidades.ver',
   reportes: 'reportes.ver',
   whatsapp: 'whatsapp.ver',
   seguridad: null,
@@ -36,6 +37,7 @@ export const GRUPOS_MENU = [
       { id: 'categorias', label: 'Categorías', icono: 'categoria', hint: 'Familias principales' },
       { id: 'marcas', label: 'Marcas', icono: 'marca', hint: 'Fabricantes y marcas' },
       { id: 'catalogos', label: 'Modelos, colores y tallas', icono: 'catalogo', hint: 'Atributos de variantes' },
+      { id: 'unidades', label: 'Unidades de medida', icono: 'inventario', hint: 'Pieza, docena, paquete, etc.' },
     ],
   },
   {

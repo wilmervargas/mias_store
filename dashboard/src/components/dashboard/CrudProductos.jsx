@@ -329,6 +329,7 @@ const CrudProductos = () => {
                 <span className={`font-bold ${Number(producto.stock) < 10 ? 'text-rose-400' : 'text-gray-200'}`}>
                   {producto.stock}
                 </span>
+                <span className="ml-1 text-[10px] text-gray-500">{producto.unidad_abreviatura || producto.unidad_medida || ''}</span>
                 {Number(producto.stock) < 10 && (
                   <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/15 text-rose-400">
                     Bajo
