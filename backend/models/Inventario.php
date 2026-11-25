@@ -125,23 +125,131 @@ class Inventario
         return (int) $id;
     }
 
-    /** Stock de un producto por almacen. */
+    /** Stock de un producto por almacen, con los datos del vinculo producto_almacen. */
     public static function stockPorAlmacen(int $productoId): array
     {
         $db = Database::conectar();
         $stmt = $db->prepare(
             "SELECT a.id AS almacen_id, a.codigo, a.nombre AS almacen,
+                    pa.id AS producto_almacen_id, pa.sku_almacen,
+                    pa.stock_minimo, pa.stock_maximo,
+                    pa.idestatus AS vinculo_estatus,
+                    pa.ubicacion_preferida_id,
                     COALESCE(SUM(i.cantidad), 0) AS stock
              FROM producto_almacen pa
              JOIN almacenes a ON a.id = pa.almacen_id
              LEFT JOIN ubicaciones u ON u.almacen_id = a.id
              LEFT JOIN inventario i ON i.ubicacion_id = u.id AND i.producto_id = pa.producto_id
              WHERE pa.producto_id = :p
-             GROUP BY a.id, a.codigo, a.nombre
+             GROUP BY a.id, a.codigo, a.nombre, pa.id, pa.sku_almacen,
+                      pa.stock_minimo, pa.stock_maximo, pa.idestatus, pa.ubicacion_preferida_id
              ORDER BY a.nombre"
         );
         $stmt->execute([':p' => $productoId]);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Fija el stock total de un producto dentro de un almacen.
+     * Si la ubicacion indicada no alcanza para descontar, distribuye la salida
+     * entre las demas ubicaciones del mismo almacen. Deja un movimiento auditado.
+     */
+    public static function fijarStockAlmacen(
+        int $productoId,
+        int $almacenId,
+        ?int $ubicacionId,
+        int $deseado,
+        array $meta = []
+    ): void {
+        if ($deseado < 0) {
+            throw new InvalidArgumentException('El stock no puede ser negativo');
+        }
+
+        $db = Database::conectar();
+        $propia = !$db->inTransaction();
+        if ($propia) {
+            $db->beginTransaction();
+        }
+
+        try {
+            if ($ubicacionId !== null && $ubicacionId > 0) {
+                if (self::almacenDeUbicacion($ubicacionId) !== $almacenId) {
+                    throw new RuntimeException('La ubicacion seleccionada no pertenece al almacen indicado');
+                }
+            } else {
+                $ubicacionId = self::ubicacionDefault($almacenId);
+                if ($ubicacionId === null) {
+                    throw new RuntimeException('El almacen seleccionado no tiene ubicaciones');
+                }
+            }
+
+            $stmt = $db->prepare(
+                "SELECT i.id, i.ubicacion_id, i.cantidad
+                 FROM inventario i
+                 JOIN ubicaciones u ON u.id = i.ubicacion_id
+                 WHERE i.producto_id = :p AND u.almacen_id = :a
+                 ORDER BY (i.ubicacion_id = :target) DESC, i.id ASC
+                 FOR UPDATE"
+            );
+            $stmt->execute([':p' => $productoId, ':a' => $almacenId, ':target' => $ubicacionId]);
+            $filas = $stmt->fetchAll();
+
+            $total = 0;
+            foreach ($filas as $fila) {
+                $total += (int) $fila['cantidad'];
+            }
+
+            $delta = $deseado - $total;
+            if ($delta === 0) {
+                if ($propia) $db->commit();
+                return;
+            }
+
+            if ($delta > 0) {
+                self::aplicar($productoId, $ubicacionId, $delta);
+            } else {
+                $restante = -$delta;
+                foreach ($filas as $fila) {
+                    if ($restante <= 0) break;
+                    $disponible = (int) $fila['cantidad'];
+                    if ($disponible <= 0) continue;
+                    $quitar = min($disponible, $restante);
+                    self::aplicar($productoId, (int) $fila['ubicacion_id'], -$quitar);
+                    $restante -= $quitar;
+                }
+                if ($restante > 0) {
+                    throw new RuntimeException('No hay inventario suficiente en el almacen para fijar esa cantidad');
+                }
+            }
+
+            $stmt = $db->prepare(
+                "INSERT INTO movimientos_inventario
+                    (tipo, producto_id, almacen_destino_id, ubicacion_destino_id,
+                     cantidad, costo_unitario, referencia, motivo, usuario_id)
+                 VALUES
+                    ('ajuste', :p, :a, :u, :cant, :costo, :ref, :motivo, :usuario)"
+            );
+            $stmt->execute([
+                ':p'       => $productoId,
+                ':a'       => $almacenId,
+                ':u'       => $ubicacionId,
+                ':cant'    => abs($delta),
+                ':costo'   => isset($meta['costo_unitario']) && $meta['costo_unitario'] !== ''
+                    ? (float) $meta['costo_unitario'] : null,
+                ':ref'     => $meta['referencia'] ?? 'Ajuste desde listado',
+                ':motivo'  => $meta['motivo'] ?? 'Edicion de presentacion por almacen',
+                ':usuario' => !empty($meta['usuario_id']) ? (int) $meta['usuario_id'] : null,
+            ]);
+
+            if ($propia) {
+                $db->commit();
+            }
+        } catch (Throwable $e) {
+            if ($propia && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     /** Detalle de inventario con filtros. */
@@ -396,5 +504,83 @@ class Inventario
             }
             throw $e;
         }
+    }
+
+    /** Obtiene un registro de inventario por ID. */
+    public static function obtener(int $id): ?array
+    {
+        $db = Database::conectar();
+        $stmt = $db->prepare(
+            "SELECT i.id, i.producto_id, i.ubicacion_id, i.cantidad, i.lote, i.fecha_vencimiento,
+                    u.almacen_id
+             FROM inventario i
+             JOIN ubicaciones u ON u.id = i.ubicacion_id
+             WHERE i.id = :id LIMIT 1"
+        );
+        $stmt->execute([':id' => $id]);
+        $fila = $stmt->fetch();
+        return $fila ?: null;
+    }
+
+    /** Actualiza un registro de inventario completo. */
+    public static function actualizar(int $id, array $datos): bool
+    {
+        $actual = self::obtener($id);
+        if (!$actual) {
+            throw new RuntimeException("Registro de inventario #{$id} no encontrado");
+        }
+
+        $productoId = isset($datos['producto_id']) ? (int) $datos['producto_id'] : (int) $actual['producto_id'];
+        $ubicacionId = isset($datos['ubicacion_id']) ? (int) $datos['ubicacion_id'] : (int) $actual['ubicacion_id'];
+        $cantidad = isset($datos['cantidad']) ? (int) $datos['cantidad'] : (int) $actual['cantidad'];
+        $lote = array_key_exists('lote', $datos) ? trim((string) $datos['lote']) : ($actual['lote'] ?? null);
+        $fechaVenc = array_key_exists('fecha_vencimiento', $datos) ? trim((string) $datos['fecha_vencimiento']) : ($actual['fecha_vencimiento'] ?? null);
+
+        if ($productoId <= 0) throw new InvalidArgumentException('El producto es obligatorio');
+        if ($ubicacionId <= 0) throw new InvalidArgumentException('La ubicación es obligatoria');
+        if ($cantidad < 0) throw new InvalidArgumentException('La cantidad no puede ser negativa');
+
+        $db = Database::conectar();
+        $stmt = $db->prepare("SELECT 1 FROM productos WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $productoId]);
+        if (!$stmt->fetchColumn()) throw new InvalidArgumentException('El producto indicado no existe');
+
+        $almacenId = self::almacenDeUbicacion($ubicacionId);
+        self::asegurarProductoAlmacen($productoId, $almacenId);
+
+        // Evitar duplicado producto+ubicacion en otro registro
+        $dup = $db->prepare(
+            "SELECT id FROM inventario WHERE producto_id = :p AND ubicacion_id = :u AND id <> :id LIMIT 1"
+        );
+        $dup->execute([':p' => $productoId, ':u' => $ubicacionId, ':id' => $id]);
+        if ($dup->fetchColumn()) {
+            throw new RuntimeException('Ya existe un registro de inventario para ese producto en la ubicación seleccionada');
+        }
+
+        $stmt = $db->prepare(
+            "UPDATE inventario
+             SET producto_id = :p, ubicacion_id = :u, cantidad = :c, lote = :lote, fecha_vencimiento = :fv
+             WHERE id = :id"
+        );
+        return $stmt->execute([
+            ':p' => $productoId,
+            ':u' => $ubicacionId,
+            ':c' => $cantidad,
+            ':lote' => ($lote === '' ? null : $lote),
+            ':fv' => ($fechaVenc === '' ? null : $fechaVenc),
+            ':id' => $id,
+        ]);
+    }
+
+    /** Elimina un registro de inventario. */
+    public static function eliminar(int $id): bool
+    {
+        $db = Database::conectar();
+        $stmt = $db->prepare("DELETE FROM inventario WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        if ($stmt->rowCount() === 0) {
+            throw new RuntimeException("Registro de inventario #{$id} no encontrado");
+        }
+        return true;
     }
 }

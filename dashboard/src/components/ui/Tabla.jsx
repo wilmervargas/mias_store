@@ -6,9 +6,10 @@ export const Tabla = ({
   colSpan = 8,
   textoCargando = 'Cargando...',
   textoVacio = 'Sin registros.',
+  minWidth = 'min-w-[680px]',
 }) => (
   <div className="bg-white border border-gray-200 rounded-2xl overflow-x-auto shadow-sm dark:bg-gray-900 dark:border-gray-800">
-    <table className="w-full min-w-[680px] text-left text-xs">
+    <table className={`w-full ${minWidth} text-left text-xs`}>
       <thead className="bg-gray-50 text-gray-600 font-bold uppercase text-[10px] border-b border-gray-200 dark:bg-gray-950 dark:text-gray-400 dark:border-gray-800">
         <tr>{cabecera}</tr>
       </thead>

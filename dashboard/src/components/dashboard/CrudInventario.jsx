@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
+import { useConfirm } from '../ui/ConfirmProvider';
 import { useToast } from '../ui/ToastProvider';
 import Boton from '../ui/Boton';
 import Modal from '../ui/Modal';
 import Icono from '../ui/Icono';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
-import { Tabla, Td, Th } from '../ui/Tabla';
+import { Acciones, Tabla, Td, Th } from '../ui/Tabla';
 
 const TIPOS = [
   { id: 'entrada', label: 'Entrada', signo: '+' },
@@ -33,6 +34,7 @@ const formVacio = {
 };
 
 const CrudInventario = () => {
+  const confirmar = useConfirm();
   const toast = useToast();
 
   const [inventario, setInventario] = useState([]);
@@ -40,11 +42,16 @@ const CrudInventario = () => {
   const [almacenes, setAlmacenes] = useState([]);
   const [ubicacionesOrigen, setUbicacionesOrigen] = useState([]);
   const [ubicacionesDestino, setUbicacionesDestino] = useState([]);
+  const [ubicacionesEditar, setUbicacionesEditar] = useState([]);
   const [filtros, setFiltros] = useState({ almacen: '', q: '', solo_con_stock: '1' });
   const [cargando, setCargando] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [form, setForm] = useState(formVacio);
   const [guardando, setGuardando] = useState(false);
+  const [modalEditar, setModalEditar] = useState(false);
+  const [registroEditar, setRegistroEditar] = useState(null);
+  const [formEditar, setFormEditar] = useState({ producto_id: '', almacen_id: '', ubicacion_id: '', cantidad: '', lote: '', fecha_vencimiento: '' });
+  const [guardandoEditar, setGuardandoEditar] = useState(false);
 
   const qDebounced = useDebounce(filtros.q);
 
@@ -88,6 +95,15 @@ const CrudInventario = () => {
     });
     return () => { activo = false; };
   }, [form.almacen_destino_id]);
+
+  useEffect(() => {
+    if (!formEditar.almacen_id) { setUbicacionesEditar([]); return; }
+    let activo = true;
+    api.get('ubicaciones', `almacen=${formEditar.almacen_id}`).then((r) => {
+      if (activo && r.success) setUbicacionesEditar(r.datos || []);
+    });
+    return () => { activo = false; };
+  }, [formEditar.almacen_id]);
 
   const set = (campo, valor) => setForm((prev) => ({ ...prev, [campo]: valor }));
 
@@ -149,6 +165,67 @@ const CrudInventario = () => {
     cargar();
   };
 
+  const abrirEditar = (item) => {
+    setRegistroEditar(item);
+    setFormEditar({
+      producto_id: String(item.producto_id || ''),
+      almacen_id: String(item.almacen_id || ''),
+      ubicacion_id: String(item.ubicacion_id || ''),
+      cantidad: item.cantidad ?? '',
+      lote: item.lote || '',
+      fecha_vencimiento: item.fecha_vencimiento || '',
+    });
+    setModalEditar(true);
+  };
+
+  const guardarEdicion = async (e) => {
+    e.preventDefault();
+    if (!registroEditar) return;
+    if (!formEditar.producto_id || !formEditar.ubicacion_id || formEditar.cantidad === '') {
+      toast.error('Producto, ubicación y cantidad son obligatorios');
+      return;
+    }
+    setGuardandoEditar(true);
+    const res = await api.put('inventario', registroEditar.id, {
+      producto_id: Number(formEditar.producto_id),
+      ubicacion_id: Number(formEditar.ubicacion_id),
+      cantidad: Number(formEditar.cantidad),
+      lote: formEditar.lote || null,
+      fecha_vencimiento: formEditar.fecha_vencimiento || null,
+    });
+    setGuardandoEditar(false);
+    if (!res.success) {
+      toast.error(res.error || 'No se pudo actualizar el registro');
+      return;
+    }
+    toast.exito('Registro de inventario actualizado');
+    setModalEditar(false);
+    setRegistroEditar(null);
+    cargar();
+  };
+
+  const eliminarRegistro = async (item) => {
+    const ok = await confirmar({
+      titulo: 'Eliminar registro de inventario',
+      mensaje: `¿Deseas eliminar el registro de "${item.producto}" en ${item.ruta || item.ubicacion_codigo || 'la ubicación'}?`,
+      variante: 'peligro',
+      textoConfirmar: 'Sí, eliminar',
+      detalle: [
+        `SKU: ${item.sku_base || '—'}`,
+        `Cantidad actual: ${item.cantidad}`,
+        'El stock del producto se recalculará automáticamente.',
+      ],
+    });
+    if (!ok) return;
+    const res = await api.delete('inventario', item.id);
+    if (!res.success) {
+      toast.error(res.error || 'No se pudo eliminar el registro');
+      return;
+    }
+    toast.exito('Registro de inventario eliminado');
+    cargar();
+  };
+
   const limpiar = () => setFiltros({ almacen: '', q: '', solo_con_stock: '1' });
   const hayFiltros = filtros.q !== '' || filtros.almacen !== '' || filtros.solo_con_stock !== '1';
 
@@ -198,7 +275,7 @@ const CrudInventario = () => {
       </BarraFiltros>
 
       <Tabla
-        colSpan={6}
+        colSpan={7}
         cargando={cargando}
         vacio={inventario.length === 0}
         textoVacio="Sin registros de inventario para los filtros seleccionados."
@@ -210,6 +287,7 @@ const CrudInventario = () => {
             <Th>Ubicación</Th>
             <Th>Tipo</Th>
             <Th align="right">Cantidad</Th>
+            <Th align="right">Acciones</Th>
           </>
         }
       >
@@ -222,6 +300,12 @@ const CrudInventario = () => {
             <Td className="text-gray-400">{item.tipo_ubicacion}</Td>
             <Td align="right" className={`font-bold ${Number(item.cantidad) === 0 ? 'text-rose-400' : 'text-white'}`}>
               {item.cantidad}
+            </Td>
+            <Td align="right">
+              <Acciones>
+                <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(item)}>Editar</Boton>
+                <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminarRegistro(item)}>Eliminar</Boton>
+              </Acciones>
             </Td>
           </tr>
         ))}
@@ -362,6 +446,55 @@ const CrudInventario = () => {
                   ? 'La transferencia resta en origen y suma en destino.'
                   : 'El movimiento queda registrado en la auditoría de inventario.'}
             </p>
+          </form>
+        </Modal>
+      )}
+
+      {modalEditar && registroEditar && (
+        <Modal
+          titulo="Editar registro de inventario"
+          subtitulo={`#${registroEditar.id} · ${registroEditar.producto || ''}`}
+          icono="editar"
+          tono="info"
+          onClose={() => { setModalEditar(false); setRegistroEditar(null); }}
+          maxW="max-w-2xl"
+          footer={
+            <>
+              <Boton variante="neutral" onClick={() => { setModalEditar(false); setRegistroEditar(null); }}>Cancelar</Boton>
+              <Boton type="submit" form="form-editar-inventario" variante="exito" icono="guardar" cargando={guardandoEditar}>Guardar cambios</Boton>
+            </>
+          }
+        >
+          <form id="form-editar-inventario" onSubmit={guardarEdicion} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Campo label="Producto" required className="sm:col-span-2">
+                <Select required value={formEditar.producto_id} onChange={(e) => setFormEditar({ ...formEditar, producto_id: e.target.value })}>
+                  <option value="">Selecciona un producto...</option>
+                  {productos.map((p) => <option key={p.id} value={p.id}>#{p.id} · {p.sku_base || p.codigo_producto} · {p.nombre}</option>)}
+                </Select>
+              </Campo>
+              <Campo label="Almacén" required>
+                <Select required value={formEditar.almacen_id} onChange={(e) => setFormEditar({ ...formEditar, almacen_id: e.target.value, ubicacion_id: '' })}>
+                  <option value="">Selecciona almacén...</option>
+                  {almacenes.map((a) => <option key={a.id} value={a.id}>{a.codigo} · {a.nombre}</option>)}
+                </Select>
+              </Campo>
+              <Campo label="Ubicación" required>
+                <Select required value={formEditar.ubicacion_id} onChange={(e) => setFormEditar({ ...formEditar, ubicacion_id: e.target.value })}>
+                  <option value="">Selecciona ubicación...</option>
+                  {ubicacionesEditar.map((u) => <option key={u.id} value={u.id}>{u.ruta}</option>)}
+                </Select>
+              </Campo>
+              <Campo label="Cantidad" required>
+                <Input type="number" min="0" required value={formEditar.cantidad} onChange={(e) => setFormEditar({ ...formEditar, cantidad: e.target.value })} />
+              </Campo>
+              <Campo label="Lote">
+                <Input value={formEditar.lote} onChange={(e) => setFormEditar({ ...formEditar, lote: e.target.value })} />
+              </Campo>
+              <Campo label="Fecha de vencimiento">
+                <Input type="date" value={formEditar.fecha_vencimiento || ''} onChange={(e) => setFormEditar({ ...formEditar, fecha_vencimiento: e.target.value })} />
+              </Campo>
+            </div>
           </form>
         </Modal>
       )}

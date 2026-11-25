@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../models/Inventario.php';
+require_once __DIR__ . '/../models/Producto.php';
 
 class InventarioController
 {
@@ -64,6 +65,63 @@ class InventarioController
     {
         try {
             responder(true, Inventario::stockPorAlmacen($productoId), 200);
+        } catch (Throwable $e) {
+            responder(false, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /?url=inventario/listado
+     * Listado agrupado por producto para el modulo de inventarios.
+     */
+    public function listado(): void
+    {
+        try {
+            $soloActivos = !isset($_GET['todos']) && !isset($_GET['incluir_inactivos']);
+            $filtros = [
+                'q'             => $_GET['q'] ?? '',
+                'idcategoria'   => $_GET['idcategoria'] ?? '',
+                'idmarca'       => $_GET['idmarca'] ?? '',
+                'idunidad'      => $_GET['idunidad'] ?? '',
+                'almacen'       => $_GET['almacen'] ?? '',
+                'stock_estado'  => $_GET['stock_estado'] ?? '',
+                'estatus'       => $_GET['estatus'] ?? '',
+                'pagina'        => $_GET['pagina'] ?? $_GET['page'] ?? '',
+                'por_pagina'    => $_GET['por_pagina'] ?? $_GET['limit'] ?? '',
+                'paginado'      => '1',
+            ];
+
+            responder(true, Producto::buscarAgrupado($filtros, $soloActivos), 200);
+        } catch (Throwable $e) {
+            responder(false, 'Error al listar inventario: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /** PUT /?url=inventario/{id} */
+    public function actualizar(int $id): void
+    {
+        try {
+            $datos = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($datos)) {
+                responder(false, 'Cuerpo de peticion invalido. Se espera JSON', 400);
+            }
+            Inventario::actualizar($id, $datos);
+            responder(true, ['mensaje' => 'Registro de inventario actualizado correctamente'], 200);
+        } catch (InvalidArgumentException | RuntimeException $e) {
+            responder(false, $e->getMessage(), 400);
+        } catch (Throwable $e) {
+            responder(false, $e->getMessage(), 500);
+        }
+    }
+
+    /** DELETE /?url=inventario/{id} */
+    public function eliminar(int $id): void
+    {
+        try {
+            Inventario::eliminar($id);
+            responder(true, ['mensaje' => 'Registro de inventario eliminado correctamente'], 200);
+        } catch (RuntimeException $e) {
+            responder(false, $e->getMessage(), 400);
         } catch (Throwable $e) {
             responder(false, $e->getMessage(), 500);
         }

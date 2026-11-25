@@ -12,20 +12,24 @@ class ProductoController
             $soloActivos = !isset($_GET['todos']) && !isset($_GET['incluir_inactivos']);
 
             $filtros = [
-                'q'            => $_GET['q'] ?? '',
-                'idcategoria'  => $_GET['idcategoria'] ?? '',
-                'idmarca'      => $_GET['idmarca'] ?? '',
-                'idmodelo'     => $_GET['idmodelo'] ?? '',
-                'idcolor'      => $_GET['idcolor'] ?? '',
-                'idtalla'      => $_GET['idtalla'] ?? '',
-                'precioMin'    => $_GET['precioMin'] ?? '',
-                'precioMax'    => $_GET['precioMax'] ?? '',
-                'stockMin'     => $_GET['stockMin'] ?? '',
-                'stockMax'     => $_GET['stockMax'] ?? '',
-                'almacen'      => $_GET['almacen'] ?? '',
+                'q'             => $_GET['q'] ?? '',
+                'idcategoria'   => $_GET['idcategoria'] ?? '',
+                'idmarca'       => $_GET['idmarca'] ?? '',
+                'idmodelo'      => $_GET['idmodelo'] ?? '',
+                'idcolor'       => $_GET['idcolor'] ?? '',
+                'idtalla'       => $_GET['idtalla'] ?? '',
+                'idunidad'      => $_GET['idunidad'] ?? '',
+                'precioMin'     => $_GET['precioMin'] ?? '',
+                'precioMax'     => $_GET['precioMax'] ?? '',
+                'stockMin'      => $_GET['stockMin'] ?? '',
+                'stockMax'      => $_GET['stockMax'] ?? '',
+                'almacen'       => $_GET['almacen'] ?? '',
                 'solo_agotados' => $_GET['solo_agotados'] ?? '',
-                'estatus'      => $_GET['estatus'] ?? '',
-                'agrupado'     => $_GET['agrupado'] ?? '',
+                'stock_estado'  => $_GET['stock_estado'] ?? '',
+                'estatus'       => $_GET['estatus'] ?? '',
+                'agrupado'      => $_GET['agrupado'] ?? '',
+                'pagina'        => $_GET['pagina'] ?? '',
+                'por_pagina'    => $_GET['por_pagina'] ?? '',
             ];
 
             responder(true, Producto::buscar($filtros, $soloActivos), 200);
@@ -183,6 +187,28 @@ class ProductoController
                 'url'     => 'http://localhost:8000/imagenes/' . $nombreUnico,
                 'mensaje' => 'Imagen subida y asociada al producto',
             ], 201);
+        } catch (Throwable $e) {
+            responder(false, $e->getMessage(), 500);
+        }
+    }
+
+    /** PUT /?url=productos/{id}/presentacion -> actualiza un SKU y su stock en un almacen. */
+    public function actualizarPresentacion(int $id): void
+    {
+        try {
+            $datos = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($datos)) {
+                responder(false, 'Cuerpo de peticion invalido. Se espera JSON', 400);
+            }
+
+            $usuarioId = class_exists('Auth') ? Auth::id() : null;
+            $fila = Producto::actualizarPresentacion($id, $datos, $usuarioId);
+            responder(true, [
+                'fila'    => $fila,
+                'mensaje' => 'Presentacion actualizada correctamente',
+            ], 200);
+        } catch (InvalidArgumentException | RuntimeException $e) {
+            responder(false, $e->getMessage(), 400);
         } catch (Throwable $e) {
             responder(false, $e->getMessage(), 500);
         }

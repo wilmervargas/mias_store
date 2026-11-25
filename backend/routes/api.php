@@ -121,6 +121,11 @@ if ($metodo === 'POST' && preg_match('#^(?:api/)?productos/([0-9]+)/imagen$#', $
     $ctrlProd->subirImagen((int) $m[1]);
     exit;
 }
+// Edicion de una presentacion/SKU y su stock en un almacen
+if ($metodo === 'PUT' && preg_match('#^(?:api/)?productos/([0-9]+)/presentacion$#', $url, $m)) {
+    $ctrlProd->actualizarPresentacion((int) $m[1]);
+    exit;
+}
 if ($metodo === 'GET' && preg_match('#^(?:api/)?productos/([0-9]+)$#', $url, $m)) {
     $ctrlProd->mostrar((int) $m[1]);
     exit;
@@ -295,6 +300,10 @@ foreach (['modelos', 'colores', 'tallas', 'unidades'] as $catalogo) {
 // ==============================================================
 // 7. INVENTARIO Y MOVIMIENTOS
 // ==============================================================
+if ($metodo === 'GET' && ($url === 'inventario/listado' || $url === 'api/inventario/listado')) {
+    $ctrlInv->listado();
+    exit;
+}
 if ($metodo === 'GET' && preg_match('#^(?:api/)?inventario/producto/([0-9]+)$#', $url, $m)) {
     $ctrlInv->stockProducto((int) $m[1]);
     exit;
@@ -305,6 +314,14 @@ if ($metodo === 'GET' && ($url === 'inventario/movimientos' || $url === 'api/inv
 }
 if ($metodo === 'POST' && ($url === 'inventario/movimientos' || $url === 'api/inventario/movimientos')) {
     $ctrlInv->registrar();
+    exit;
+}
+if ($metodo === 'PUT' && preg_match('#^(?:api/)?inventario/([0-9]+)$#', $url, $m)) {
+    $ctrlInv->actualizar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'DELETE' && preg_match('#^(?:api/)?inventario/([0-9]+)$#', $url, $m)) {
+    $ctrlInv->eliminar((int) $m[1]);
     exit;
 }
 if ($metodo === 'GET' && ($url === 'inventario' || $url === 'api/inventario')) {

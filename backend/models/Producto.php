@@ -267,6 +267,7 @@ class Producto
         if (!empty($f['idcategoria'])) { $where[] = "p.idcategoria = :cat"; $params[':cat'] = (int)$f['idcategoria']; }
         if (!empty($f['idmarca'])) { $where[] = "p.idmarca = :mar"; $params[':mar'] = (int)$f['idmarca']; }
         if (!empty($f['idmodelo'])) { $where[] = "p.idmodelo = :mod"; $params[':mod'] = (int)$f['idmodelo']; }
+        if (!empty($f['idunidad'])) { $where[] = "p.idunidad = :uni"; $params[':uni'] = (int)$f['idunidad']; }
 
         $having = [];
         if (!empty($f['idcolor'])) { $where[] = "EXISTS (SELECT 1 FROM productos h2 WHERE h2.producto_base_id=p.id AND h2.es_base=0 AND h2.idcolor=:col)"; $params[':col']=(int)$f['idcolor']; }
@@ -274,16 +275,23 @@ class Producto
         if (!empty($f['almacen'])) { $where[] = "EXISTS (SELECT 1 FROM productos h2 JOIN producto_almacen pa ON pa.producto_id=h2.id WHERE h2.producto_base_id=p.id AND h2.es_base=0 AND pa.almacen_id=:alm)"; $params[':alm']=(int)$f['almacen']; }
         if (isset($f['precioMin']) && $f['precioMin'] !== '') { $having[] = "MAX(h.precio) >= :pmin"; $params[':pmin']=(float)$f['precioMin']; }
         if (isset($f['precioMax']) && $f['precioMax'] !== '') { $having[] = "MIN(h.precio) <= :pmax"; $params[':pmax']=(float)$f['precioMax']; }
-        if (isset($f['stockMin']) && $f['stockMin'] !== '') { $having[] = "COALESCE(SUM(h.stock),0) >= :smin"; $params[':smin']=(int)$f['stockMin']; }
-        if (isset($f['solo_agotados']) && (int)$f['solo_agotados'] === 1) { $having[] = "COALESCE(SUM(h.stock),0) = 0"; }
+        if (isset($f['stockMin']) && $f['stockMin'] !== '') { $having[] = "stock_total >= :smin"; $params[':smin']=(int)$f['stockMin']; }
+        if (isset($f['solo_agotados']) && (int)$f['solo_agotados'] === 1) { $having[] = "stock_total = 0"; }
+
+        $stockEstado = trim((string) ($f['stock_estado'] ?? ''));
+        if ($stockEstado === 'con_stock') { $having[] = "stock_total > 0"; }
+        elseif ($stockEstado === 'sin_stock') { $having[] = "stock_total = 0"; }
+        elseif ($stockEstado === 'bajo_stock') { $having[] = "stock_total > 0 AND stock_total < 10"; }
 
         $sql = "SELECT
                     p.id, p.nombre, p.descripcion, p.sku_base, p.codigo_producto, p.imagen, p.idestatus,
-                    p.idcategoria, p.idmarca, p.idmodelo, p.idunidad, p.unidad_medida,
+                    p.es_base, p.idcategoria, p.idmarca, p.idmodelo, p.idunidad, p.unidad_medida,
                     c.nombre AS categoria, m.nombre AS marca, mo.nombre AS modelo,
                     un.abreviatura AS unidad_abreviatura,
-                    COUNT(h.id) AS total_filas,
-                    COALESCE(SUM(h.stock),0) AS stock_total,
+                    COUNT(DISTINCT h.id) AS total_filas,
+                    (SELECT COALESCE(SUM(hs.stock), 0)
+                       FROM productos hs
+                      WHERE hs.producto_base_id = p.id AND hs.es_base = 0) AS stock_total,
                     MIN(h.precio) AS precio_min,
                     MAX(h.precio) AS precio_max,
                     MIN(h.costo) AS costo_min,
@@ -304,7 +312,7 @@ class Producto
                 LEFT JOIN almacenes a ON a.id = pa.almacen_id
                 WHERE p.es_base = 1 AND " . implode(' AND ', $where) . "
                 GROUP BY p.id, p.nombre, p.descripcion, p.sku_base, p.codigo_producto, p.imagen, p.idestatus,
-                         p.idcategoria, p.idmarca, p.idmodelo, p.idunidad, p.unidad_medida,
+                         p.es_base, p.idcategoria, p.idmarca, p.idmodelo, p.idunidad, p.unidad_medida,
                          c.nombre, m.nombre, mo.nombre, un.abreviatura";
         if ($having) $sql .= " HAVING " . implode(' AND ', $having);
         $sql .= " ORDER BY p.id DESC LIMIT 500";
@@ -322,6 +330,7 @@ class Producto
         if (!empty($f['idcategoria'])) { $where2[]="p.idcategoria=:cat"; $params2[':cat']=(int)$f['idcategoria']; }
         if (!empty($f['idmarca'])) { $where2[]="p.idmarca=:mar"; $params2[':mar']=(int)$f['idmarca']; }
         if (!empty($f['idmodelo'])) { $where2[]="p.idmodelo=:mod"; $params2[':mod']=(int)$f['idmodelo']; }
+        if (!empty($f['idunidad'])) { $where2[]="p.idunidad=:uni"; $params2[':uni']=(int)$f['idunidad']; }
         if (!empty($f['idcolor'])) { $where2[]="p.idcolor=:col"; $params2[':col']=(int)$f['idcolor']; }
         if (!empty($f['idtalla'])) { $where2[]="p.idtalla=:tal"; $params2[':tal']=(int)$f['idtalla']; }
         if (!empty($f['almacen'])) { $where2[]="EXISTS (SELECT 1 FROM producto_almacen pa2 WHERE pa2.producto_id=p.id AND pa2.almacen_id=:alm)"; $params2[':alm']=(int)$f['almacen']; }
@@ -329,8 +338,11 @@ class Producto
         if (isset($f['precioMax']) && $f['precioMax']!=='') { $where2[]="p.precio<=:pmax"; $params2[':pmax']=(float)$f['precioMax']; }
         if (isset($f['stockMin']) && $f['stockMin']!=='') { $where2[]="p.stock>=:smin"; $params2[':smin']=(int)$f['stockMin']; }
         if (isset($f['solo_agotados']) && (int)$f['solo_agotados']===1) { $where2[]="p.stock=0"; }
+        if ($stockEstado === 'con_stock') { $where2[] = "p.stock > 0"; }
+        elseif ($stockEstado === 'sin_stock') { $where2[] = "p.stock = 0"; }
+        elseif ($stockEstado === 'bajo_stock') { $where2[] = "p.stock > 0 AND p.stock < 10"; }
 
-        $sql2 = "SELECT p.id,p.nombre,p.descripcion,p.sku_base,p.codigo_producto,p.imagen,p.idestatus,p.idcategoria,p.idmarca,p.idmodelo,p.idunidad,p.unidad_medida,
+        $sql2 = "SELECT p.id,p.nombre,p.descripcion,p.sku_base,p.codigo_producto,p.imagen,p.idestatus,p.es_base,p.idcategoria,p.idmarca,p.idmodelo,p.idunidad,p.unidad_medida,
                         c.nombre AS categoria,m.nombre AS marca,mo.nombre AS modelo,un.abreviatura AS unidad_abreviatura,
                         1 AS total_filas, p.stock AS stock_total, p.precio AS precio_min, p.precio AS precio_max, p.costo AS costo_min, p.costo AS costo_max,
                         co.nombre AS colores, CONCAT(co.nombre, '~', COALESCE(co.codigo_hex, '')) AS colores_detalle, ta.nombre AS tallas,
@@ -350,6 +362,29 @@ class Producto
 
         $all = array_merge($bases, $standalone);
         usort($all, fn($a,$b) => ((int)$b['id']) <=> ((int)$a['id']));
+
+        $pagina = isset($f['pagina']) ? (int) $f['pagina'] : (isset($f['page']) ? (int) $f['page'] : 0);
+        $porPagina = isset($f['por_pagina']) ? (int) $f['por_pagina'] : (isset($f['limit']) ? (int) $f['limit'] : 0);
+        $paginado = $pagina > 0 || $porPagina > 0 || !empty($f['paginado']);
+
+        if ($paginado) {
+            $pagina = max(1, $pagina);
+            $porPagina = max(1, min(100, $porPagina > 0 ? $porPagina : 20));
+            $total = count($all);
+            $totalPaginas = max(1, (int) ceil($total / $porPagina));
+            $pagina = min($pagina, $totalPaginas);
+            $offset = ($pagina - 1) * $porPagina;
+            return [
+                'productos' => array_slice($all, $offset, $porPagina),
+                'paginacion' => [
+                    'total' => $total,
+                    'pagina' => $pagina,
+                    'por_pagina' => $porPagina,
+                    'total_paginas' => $totalPaginas,
+                ],
+            ];
+        }
+
         return array_slice($all, 0, 500);
     }
 
@@ -804,6 +839,152 @@ class Producto
         }
     }
 
+    /** Devuelve la fila cruda de un producto (sin resolver base/hijos). */
+    public static function obtenerFilaPorId(int $id): ?array
+    {
+        $db = Database::conectar();
+        $stmt = $db->prepare("SELECT * FROM productos WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $id]);
+        $fila = $stmt->fetch();
+        return $fila ?: null;
+    }
+
+    /**
+     * Actualiza una presentacion (SKU hijo) y el stock de UN almacen concreto.
+     * No toca las demas presentaciones del producto base.
+     */
+    public static function actualizarPresentacion(int $id, array $datos, ?int $usuarioId = null): array
+    {
+        $db = Database::conectar();
+        $db->beginTransaction();
+
+        try {
+            $actual = self::obtenerFilaPorId($id);
+            if (!$actual) {
+                throw new RuntimeException("Producto #{$id} no encontrado");
+            }
+            if ((int) ($actual['es_base'] ?? 0) === 1) {
+                throw new RuntimeException('El producto principal no se edita como presentacion de almacen');
+            }
+
+            $precio = array_key_exists('precio', $datos) ? (float) $datos['precio'] : (float) $actual['precio'];
+            if ($precio <= 0) {
+                throw new InvalidArgumentException('El precio debe ser mayor a 0');
+            }
+            $costo = array_key_exists('costo', $datos) ? (float) $datos['costo'] : (float) $actual['costo'];
+            if ($costo < 0) {
+                throw new InvalidArgumentException('El costo no puede ser negativo');
+            }
+            $preciofull = array_key_exists('preciofull', $datos)
+                ? (float) $datos['preciofull']
+                : (float) ($actual['preciofull'] ?? $precio);
+            if ($preciofull <= 0) $preciofull = $precio;
+
+            $idcolor = (int) ($datos['idcolor'] ?? $actual['idcolor'] ?? 1);
+            $idtalla = (int) ($datos['idtalla'] ?? $actual['idtalla'] ?? 1);
+            if ($idcolor <= 0) $idcolor = 1;
+            if ($idtalla <= 0) $idtalla = 1;
+
+            $codigoDetalle = array_key_exists('codigo_detalle', $datos)
+                ? trim((string) $datos['codigo_detalle'])
+                : (string) ($actual['codigo_detalle'] ?? '');
+            $codigoBarras = array_key_exists('codigo_barras', $datos)
+                ? trim((string) $datos['codigo_barras'])
+                : (string) ($actual['codigo_barras'] ?? '');
+
+            $stmt = $db->prepare(
+                "UPDATE productos SET
+                    idcolor = :idcolor,
+                    idtalla = :idtalla,
+                    costo = :costo,
+                    precio = :precio,
+                    preciofull = :preciofull,
+                    codigo_detalle = :codigo_detalle,
+                    codigo_barras = :codigo_barras
+                 WHERE id = :id"
+            );
+            $stmt->execute([
+                ':idcolor'        => $idcolor,
+                ':idtalla'        => $idtalla,
+                ':costo'          => $costo,
+                ':precio'         => $precio,
+                ':preciofull'     => $preciofull,
+                ':codigo_detalle' => $codigoDetalle !== '' ? $codigoDetalle : null,
+                ':codigo_barras'  => $codigoBarras !== '' ? $codigoBarras : null,
+                ':id'             => $id,
+            ]);
+
+            $almacenId = (int) ($datos['almacen_id'] ?? 0);
+            if ($almacenId <= 0) {
+                throw new InvalidArgumentException('Debes indicar el almacen de la presentacion');
+            }
+
+            $stmt = $db->prepare(
+                "SELECT id FROM producto_almacen WHERE producto_id = :p AND almacen_id = :a LIMIT 1"
+            );
+            $stmt->execute([':p' => $id, ':a' => $almacenId]);
+            if ($stmt->fetchColumn() === false) {
+                Inventario::asegurarProductoAlmacen($id, $almacenId);
+            }
+
+            $skuAlmacen = array_key_exists('sku_almacen', $datos)
+                ? trim((string) $datos['sku_almacen'])
+                : '';
+            if ($skuAlmacen !== '') {
+                $stmt = $db->prepare(
+                    "SELECT 1 FROM producto_almacen
+                     WHERE sku_almacen = :s AND NOT (producto_id = :p AND almacen_id = :a)
+                     LIMIT 1"
+                );
+                $stmt->execute([':s' => $skuAlmacen, ':p' => $id, ':a' => $almacenId]);
+                if ($stmt->fetchColumn()) {
+                    throw new InvalidArgumentException('El SKU de almacen ya esta en uso por otro producto');
+                }
+                $stmt = $db->prepare(
+                    "UPDATE producto_almacen SET sku_almacen = :s
+                     WHERE producto_id = :p AND almacen_id = :a"
+                );
+                $stmt->execute([':s' => $skuAlmacen, ':p' => $id, ':a' => $almacenId]);
+            }
+
+            $ubicacionId = array_key_exists('ubicacion_id', $datos) && $datos['ubicacion_id'] !== ''
+                ? (int) $datos['ubicacion_id'] : null;
+            if ($ubicacionId !== null) {
+                if (Inventario::almacenDeUbicacion($ubicacionId) !== $almacenId) {
+                    throw new InvalidArgumentException('La ubicacion no pertenece al almacen indicado');
+                }
+                $stmt = $db->prepare(
+                    "UPDATE producto_almacen SET ubicacion_preferida_id = :u
+                     WHERE producto_id = :p AND almacen_id = :a"
+                );
+                $stmt->execute([':u' => $ubicacionId, ':p' => $id, ':a' => $almacenId]);
+            }
+
+            if (array_key_exists('stock', $datos) && $datos['stock'] !== '' && $datos['stock'] !== null) {
+                Inventario::fijarStockAlmacen(
+                    $id,
+                    $almacenId,
+                    $ubicacionId,
+                    max(0, (int) $datos['stock']),
+                    [
+                        'costo_unitario' => $costo,
+                        'referencia'     => 'Edicion de presentacion',
+                        'motivo'         => 'Stock ajustado desde el listado de productos',
+                        'usuario_id'     => $usuarioId,
+                    ]
+                );
+            }
+
+            $db->commit();
+            return self::obtenerFilaPorId($id) ?? [];
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     private static function convertirStandaloneABase(PDO $db, array $actual): int
     {
         $baseData = $actual;
@@ -836,6 +1017,35 @@ class Producto
         $db->beginTransaction();
 
         try {
+            $actual = self::obtenerFilaPorId($id);
+            if (!$actual) {
+                throw new RuntimeException("Producto #{$id} no encontrado");
+            }
+
+            // Un producto principal no se elimina mientras tenga presentaciones/SKUs hijos.
+            if ((int) ($actual['es_base'] ?? 0) === 1) {
+                $stmt = $db->prepare("SELECT COUNT(*) FROM productos WHERE producto_base_id = :id AND es_base = 0");
+                $stmt->execute([':id' => $id]);
+                $hijos = (int) $stmt->fetchColumn();
+                if ($hijos > 0) {
+                    throw new RuntimeException(
+                        "No se puede eliminar el producto principal: tiene {$hijos} presentacion(es) vinculada(s). " .
+                        'Elimina o desvincula primero las presentaciones.'
+                    );
+                }
+            }
+
+            // Tampoco se elimina un registro con inventario pendiente.
+            $stmt = $db->prepare("SELECT COALESCE(SUM(cantidad), 0) FROM inventario WHERE producto_id = :id");
+            $stmt->execute([':id' => $id]);
+            $stock = (int) $stmt->fetchColumn();
+            if ($stock > 0) {
+                throw new RuntimeException(
+                    "No se puede eliminar: el producto tiene {$stock} unidad(es) en inventario. " .
+                    'Ajusta el stock a cero primero.'
+                );
+            }
+
             $stmt = $db->prepare("DELETE FROM productos WHERE id = :id");
             $stmt->execute([':id' => $id]);
 

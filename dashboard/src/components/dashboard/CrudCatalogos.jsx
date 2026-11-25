@@ -42,6 +42,8 @@ const CrudCatalogos = ({ tabFijo = null }) => {
 
   const qDebounced = useDebounce(filtros.q);
   const tabActual = TABS.find((t) => t.id === tab) || TABS[0];
+  // "Unidades" es un modulo principal del menu; no se muestra como pestaña aqui.
+  const tabsVisibles = TABS.filter((t) => t.id !== 'unidades');
 
   useEffect(() => {
     api.get('marcas').then((r) => setMarcas(r.datos || []));
@@ -215,7 +217,7 @@ const CrudCatalogos = ({ tabFijo = null }) => {
           <p className="text-[11px] text-gray-500 mt-0.5">
             {tabFijo
               ? `Gestiona las ${tabActual.label.toLowerCase()} disponibles para los productos`
-              : 'Modelos, colores, tallas y unidades de los productos'}
+              : 'Modelos, colores y tallas de los productos'}
           </p>
         </div>
         <Boton variante="primario" icono="mas" onClick={abrirCrear}>
@@ -225,7 +227,7 @@ const CrudCatalogos = ({ tabFijo = null }) => {
 
       {!tabFijo && (
         <div className="flex flex-wrap gap-2">
-          {TABS.map((t) => (
+          {tabsVisibles.map((t) => (
             <button
               key={t.id}
               type="button"
