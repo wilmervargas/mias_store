@@ -216,7 +216,7 @@ const CrudAlmacenes = () => {
             <Th align="right">Productos</Th>
             <Th align="right">Unidades</Th>
             <Th>Estado</Th>
-            <Th align="right">Acciones</Th>
+            <Th align="center">Acciones</Th>
           </>
         }
       >
@@ -232,19 +232,12 @@ const CrudAlmacenes = () => {
               <Td align="right" className="text-gray-300">{almacen.total_productos}</Td>
               <Td align="right" className="font-bold text-gray-900 dark:text-white">{Number(almacen.total_unidades).toLocaleString('es-VE')}</Td>
               <Td><BadgeEstado activo={activo} /></Td>
-              <Td align="right">
-                <Acciones>
-                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(almacen)}>
-                    Editar
-                  </Boton>
+              <Td align="center"><Acciones>
+                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(almacen)} title="Editar" aria-label="Editar"></Boton>
                   {activo ? (
-                    <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => desactivar(almacen)}>
-                      Desactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => desactivar(almacen)} title="Desactivar" aria-label="Desactivar"></Boton>
                   ) : (
-                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(almacen)}>
-                      Reactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(almacen)} title="Reactivar" aria-label="Reactivar"></Boton>
                   )}
                   <Boton
                     tamano="sm"
@@ -253,9 +246,7 @@ const CrudAlmacenes = () => {
                     disabled={!almacen.puede_eliminar}
                     title={!almacen.puede_eliminar ? 'Tiene productos o inventario vinculado.' : undefined}
                     onClick={() => eliminar(almacen)}
-                  >
-                    Eliminar
-                  </Boton>
+                   aria-label="Eliminar"></Boton>
                 </Acciones>
               </Td>
             </tr>

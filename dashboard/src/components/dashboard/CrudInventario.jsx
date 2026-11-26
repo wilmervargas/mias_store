@@ -287,7 +287,7 @@ const CrudInventario = () => {
             <Th>Ubicación</Th>
             <Th>Tipo</Th>
             <Th align="right">Cantidad</Th>
-            <Th align="right">Acciones</Th>
+            <Th align="center">Acciones</Th>
           </>
         }
       >
@@ -301,10 +301,9 @@ const CrudInventario = () => {
             <Td align="right" className={`font-bold ${Number(item.cantidad) === 0 ? 'text-rose-400' : 'text-white'}`}>
               {item.cantidad}
             </Td>
-            <Td align="right">
-              <Acciones>
-                <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(item)}>Editar</Boton>
-                <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminarRegistro(item)}>Eliminar</Boton>
+            <Td align="center"><Acciones>
+                <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(item)} title="Editar" aria-label="Editar"></Boton>
+                <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminarRegistro(item)} title="Eliminar" aria-label="Eliminar"></Boton>
               </Acciones>
             </Td>
           </tr>

@@ -381,23 +381,24 @@ const CrudProductos = () => {
       </BarraFiltros>
 
       <Tabla
-        colSpan={10}
+        colSpan={11}
         cargando={cargando}
         vacio={productos.length === 0}
         textoVacio="No hay productos para los filtros seleccionados."
-        minWidth="min-w-[1280px]"
+        minWidth="min-w-[1040px]"
         cabecera={
           <>
-            <Th>Imagen</Th>
-            <Th>SKU</Th>
-            <Th>Producto / Descripción</Th>
-            <Th>Categoría / Marca</Th>
-            <Th align="right">Stock total</Th>
-            <Th align="right">Precio / Costo</Th>
-            <Th className="border-l-2 border-purple-200 dark:border-purple-500/30">Almacén</Th>
-            <Th>Color / Talla</Th>
-            <Th align="right">Stock almacén</Th>
-            <Th align="right">Acciones</Th>
+            <Th compacta>Imagen</Th>
+            <Th compacta>SKU</Th>
+            <Th compacta>Producto / Descripción</Th>
+            <Th compacta>Categoría / Marca</Th>
+            <Th compacta align="right">Stock total</Th>
+            <Th compacta align="right">Precio / Costo</Th>
+            <Th compacta className="border-l-2 border-purple-200 dark:border-purple-500/30">Almacén</Th>
+            <Th compacta>Ubicación</Th>
+            <Th compacta>Color / Talla</Th>
+            <Th compacta align="right">Stock almacén</Th>
+            <Th compacta align="center">Acciones</Th>
           </>
         }
       >
@@ -435,6 +436,18 @@ const CrudProductos = () => {
               || String(a.fila.sku_base || '').localeCompare(String(b.fila.sku_base || ''));
           });
 
+          const gruposAlmacen = [];
+          const grupoMap = new Map();
+          presentaciones.forEach((item) => {
+            const key = item.almacen?.almacen_id ? String(item.almacen.almacen_id) : 'sin';
+            if (!grupoMap.has(key)) {
+              const grupo = { key, almacen: item.almacen, items: [] };
+              grupoMap.set(key, grupo);
+              gruposAlmacen.push(grupo);
+            }
+            grupoMap.get(key).items.push(item);
+          });
+
           const almacenesCodigo = [...new Set(
             presentaciones.map((p) => p.almacen?.codigo).filter(Boolean)
           )];
@@ -448,109 +461,129 @@ const CrudProductos = () => {
           return (
             <Fragment key={producto.id}>
               <tr className={`transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/40 ${!activo ? 'bg-rose-50/60 dark:bg-rose-500/5' : ''}`}>
-                <Td>
+                <Td compacta>
                   <img
                     src={`http://localhost:8000/imagenes/${producto.imagen}`}
                     alt={producto.nombre}
-                    className="w-11 h-11 rounded-lg object-contain bg-gray-950 border border-gray-800"
+                    className="w-[52px] h-[52px] rounded-lg object-contain bg-gray-950 border border-gray-800"
                   />
                 </Td>
-                <Td className="font-mono text-[10px] text-cyan-400">
+                <Td compacta className="font-mono text-[10px] text-cyan-400">
                   <span className="block">{producto.codigo_producto || producto.sku_base}</span>
                   <span className="mt-0.5 block text-gray-500">
                     {esBase ? `${totalFilas} presentación(es)` : 'Producto simple'}
                   </span>
                   <span className="mt-1 block"><BadgeEstado activo={activo} /></span>
                 </Td>
-                <Td className="max-w-[240px]">
+                <Td compacta className="max-w-[240px]">
                   <span className="block truncate font-bold text-gray-900 dark:text-white">{producto.nombre}</span>
                   <span className="block truncate text-[10px] text-gray-500">
                     {producto.descripcion || producto.modelo || 'Sin descripción'}
                   </span>
                 </Td>
-                <Td className="text-[11px] text-gray-400">
+                <Td compacta className="text-[11px] text-gray-400">
                   <span className="block">{producto.categoria || 'N/A'}</span>
                   <span className="block text-blue-400">{producto.marca || 'N/A'}</span>
                 </Td>
-                <Td align="right">
+                <Td compacta align="right">
                   <span className={`font-bold ${stockTotal < 10 ? 'text-rose-400' : 'text-gray-900 dark:text-white'}`}>{stockTotal}</span>
                   <span className="ml-1 text-[10px] text-gray-500">{producto.unidad_abreviatura || producto.unidad_medida || ''}</span>
                 </Td>
-                <Td align="right" className="whitespace-nowrap font-mono text-[11px]">
+                <Td compacta align="right" className="whitespace-nowrap font-mono text-[11px]">
                   <span className="block text-gray-900 dark:text-gray-100">{rangoPrecio}</span>
                   <span className="block text-[10px] text-gray-500">Costo {rangoCosto}</span>
                 </Td>
-                <Td className="border-l-2 border-purple-200 text-[11px] align-top dark:border-purple-500/30">
-                  {presentaciones.length === 0 ? (
+                <Td compacta className="border-l-2 border-purple-200 text-[11px] align-top dark:border-purple-500/30">
+                  {gruposAlmacen.length === 0 ? (
                     <span className="text-gray-500">-</span>
                   ) : (
-                    <div className="space-y-2">
-                      {presentaciones.map(({ fila, almacen }, idx) => (
-                        <div key={`${producto.id}-${fila.id}-${almacen?.almacen_id || 'sin'}-alm-${idx}`} className={`min-h-[52px] flex flex-col justify-center ${idx > 0 ? 'pt-2 border-t border-gray-200 dark:border-gray-800' : ''}`}>
-                          {almacen ? (
-                            <span className="inline-flex flex-wrap items-center gap-1.5">
-                              <span className="rounded-md bg-cyan-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
-                                {almacen.codigo}
-                              </span>
-                              <span className="text-gray-500 dark:text-gray-400">{almacen.almacen}</span>
-                            </span>
-                          ) : (
-                            <span className="text-gray-500">Sin almacen</span>
-                          )}
+                    <div className="space-y-1">
+                      {gruposAlmacen.map((grupo, gIdx) => (
+                        <div key={`${producto.id}-almg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? 'pt-1 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                          {grupo.items.map((item, iIdx) => (
+                            <div key={`${producto.id}-${item.fila.id}-${grupo.key}-a-${iIdx}`} className={`min-h-[34px] flex flex-col justify-center ${iIdx > 0 ? 'border-t border-dashed border-gray-100 dark:border-gray-800/60' : ''}`}>
+                              {iIdx === 0 ? (
+                                grupo.almacen ? (
+                                  <span className="rounded-md bg-cyan-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
+                                    {grupo.almacen.codigo}
+                                  </span>
+                                ) : <span className="text-gray-500">Sin almacén</span>
+                              ) : null}
+                            </div>
+                          ))}
                         </div>
                       ))}
                     </div>
                   )}
                 </Td>
-                <Td className="text-[11px] align-top">
-                  {presentaciones.length === 0 ? (
+                <Td compacta className="text-[11px] align-top">
+                  {gruposAlmacen.length === 0 ? (
                     <span className="text-gray-500">-</span>
                   ) : (
-                    <div className="space-y-2">
-                      {presentaciones.map(({ fila, almacen }, idx) => (
-                        <div key={`${producto.id}-${fila.id}-${almacen?.almacen_id || 'sin'}-ct-${idx}`} className={`min-h-[52px] flex flex-wrap items-center content-center gap-1.5 ${idx > 0 ? 'pt-2 border-t border-gray-200 dark:border-gray-800' : ''}`}>
-                          <span className="inline-flex items-center gap-1.5">
-                            <span className="w-4 h-4 rounded-full border border-gray-300 shadow-sm dark:border-gray-600" style={{ background: fila.color_hex || '#d1d5db' }} />
-                            <span className="text-gray-600 dark:text-gray-300">{fila.color || '-'}</span>
-                          </span>
-                          <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                            Talla {fila.talla || '-'}
-                          </span>
+                    <div className="space-y-1">
+                      {gruposAlmacen.map((grupo, gIdx) => (
+                        <div key={`${producto.id}-ubg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? 'pt-1 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                          {grupo.items.map((item, iIdx) => {
+                            const ubics = Array.isArray(item.fila?.ubicaciones)
+                              ? item.fila.ubicaciones.filter((u) => !grupo.almacen?.almacen_id || Number(u.almacen_id) === Number(grupo.almacen.almacen_id))
+                              : [];
+                            const ubicCod = [...new Set(ubics.map((u) => u.ubicacion_codigo || u.codigo).filter(Boolean))].join(', ');
+                            return (
+                              <div key={`${producto.id}-${item.fila.id}-${grupo.key}-u-${iIdx}`} className={`min-h-[34px] flex flex-col justify-center ${iIdx > 0 ? 'border-t border-dashed border-gray-100 dark:border-gray-800/60' : ''}`}>
+                                <span className="font-mono text-[10px] text-gray-600 dark:text-gray-300">{ubicCod || '-'}</span>
+                              </div>
+                            );
+                          })}
                         </div>
                       ))}
                     </div>
                   )}
                 </Td>
-                <Td align="right" className="align-top">
-                  {presentaciones.length === 0 ? (
+                <Td compacta className="text-[11px] align-top">
+                  {gruposAlmacen.length === 0 ? (
                     <span className="text-gray-500">-</span>
                   ) : (
-                    <div className="space-y-2">
-                      {presentaciones.map(({ fila, almacen }, idx) => {
-                        const stockFila = Number(almacen?.stock ?? fila.stock ?? 0);
-                        return (
-                          <div key={`${producto.id}-${fila.id}-${almacen?.almacen_id || 'sin'}-st-${idx}`} className={`min-h-[52px] flex flex-col justify-center ${idx > 0 ? 'pt-2 border-t border-gray-200 dark:border-gray-800' : ''}`}>
-                            <span className={`font-bold ${stockFila <= 0 ? 'text-rose-500' : 'text-gray-900 dark:text-white'}`}>{stockFila}</span>
-                            <span className="ml-1 text-[10px] text-gray-500">{producto.unidad_abreviatura || producto.unidad_medida || ''}</span>
-                          </div>
-                        );
-                      })}
+                    <div className="space-y-1">
+                      {gruposAlmacen.map((grupo, gIdx) => (
+                        <div key={`${producto.id}-ctg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? 'pt-1 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                          {grupo.items.map(({ fila }, iIdx) => (
+                            <div key={`${producto.id}-${fila.id}-${grupo.key}-ct-${iIdx}`} className={`min-h-[34px] flex flex-wrap items-center content-center gap-1.5 ${iIdx > 0 ? 'border-t border-dashed border-gray-100 dark:border-gray-800/60' : ''}`}>
+                              <span className="w-4 h-4 rounded-full border border-gray-300 shadow-sm dark:border-gray-600 shrink-0" style={{ background: fila.color_hex || '#d1d5db' }} title={fila.color || ''} />
+                              <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">{fila.talla || '-'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </Td>
-                <Td align="right">
-                  <Acciones>
-                    <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(producto)}>
-                      Editar
-                    </Boton>
+                <Td compacta align="right" className="align-top">
+                  {gruposAlmacen.length === 0 ? (
+                    <span className="text-gray-500">-</span>
+                  ) : (
+                    <div className="space-y-1">
+                      {gruposAlmacen.map((grupo, gIdx) => (
+                        <div key={`${producto.id}-stg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? 'pt-1 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                          {grupo.items.map(({ fila, almacen }, iIdx) => {
+                            const stockFila = Number(almacen?.stock ?? fila.stock ?? 0);
+                            return (
+                              <div key={`${producto.id}-${fila.id}-${grupo.key}-st-${iIdx}`} className={`min-h-[34px] flex items-center justify-end gap-1 ${iIdx > 0 ? 'border-t border-dashed border-gray-100 dark:border-gray-800/60' : ''}`}>
+                                <span className={`font-bold ${stockFila <= 0 ? 'text-rose-500' : 'text-gray-900 dark:text-white'}`}>{stockFila}</span>
+                                <span className="text-[10px] text-gray-500">{producto.unidad_abreviatura || producto.unidad_medida || ''}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Td>
+                <Td compacta align="center"><Acciones>
+                    <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(producto)} title="Editar" aria-label="Editar"></Boton>
                     {activo ? (
-                      <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => desactivar(producto)}>
-                        Desactivar
-                      </Boton>
+                      <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => desactivar(producto)} title="Desactivar" aria-label="Desactivar"></Boton>
                     ) : (
-                      <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(producto)}>
-                        Reactivar
-                      </Boton>
+                      <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(producto)} title="Reactivar" aria-label="Reactivar"></Boton>
                     )}
                     <Boton
                       tamano="sm"
@@ -559,9 +592,7 @@ const CrudProductos = () => {
                       disabled={Boolean(motivoNoEliminarProducto)}
                       title={motivoNoEliminarProducto}
                       onClick={() => eliminar(producto)}
-                    >
-                      Eliminar
-                    </Boton>
+                     aria-label="Eliminar"></Boton>
                   </Acciones>
                 </Td>
               </tr>
@@ -594,3 +625,6 @@ const CrudProductos = () => {
 };
 
 export default CrudProductos;
+
+
+

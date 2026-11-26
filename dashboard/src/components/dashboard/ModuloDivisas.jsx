@@ -245,7 +245,7 @@ const ModuloDivisas = () => {
         cargando={cargando}
         vacio={tasas.length === 0}
         textoVacio="No hay tasas registradas."
-        cabecera={<><Th>Vigencia</Th><Th>Moneda</Th><Th align="right">Tasa (Bs)</Th><Th>Fuente</Th><Th>Registrada</Th><Th align="right">Acciones</Th></>}
+        cabecera={<><Th>Vigencia</Th><Th>Moneda</Th><Th align="right">Tasa (Bs)</Th><Th>Fuente</Th><Th>Registrada</Th><Th align="center">Acciones</Th></>}
       >
         {tasas.map((t) => (
           <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
@@ -254,10 +254,9 @@ const ModuloDivisas = () => {
             <Td align="right" className="font-mono font-bold text-gray-900 dark:text-white">Bs {fmtMonto(t.tasa)}</Td>
             <Td><span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{FUENTE_LABEL[t.fuente] || t.fuente}</span></Td>
             <Td className="text-gray-500 text-[11px]">{fmtFecha(t.created_at)}</Td>
-            <Td align="right">
-              <Acciones>
-                <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(t)}>Editar</Boton>
-                <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminar(t)}>Eliminar</Boton>
+            <Td align="center"><Acciones>
+                <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(t)} title="Editar" aria-label="Editar"></Boton>
+                <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminar(t)} title="Eliminar" aria-label="Eliminar"></Boton>
               </Acciones>
             </Td>
           </tr>

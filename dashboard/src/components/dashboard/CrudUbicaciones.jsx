@@ -272,7 +272,7 @@ const CrudUbicaciones = () => {
             <Th align="right">Nivel</Th>
             <Th align="right">Unidades</Th>
             <Th>Estado</Th>
-            <Th align="right">Acciones</Th>
+            <Th align="center">Acciones</Th>
           </>
         }
       >
@@ -289,19 +289,12 @@ const CrudUbicaciones = () => {
               <Td align="right" className="text-gray-400">{ubicacion.profundidad}</Td>
               <Td align="right" className="font-bold text-gray-900 dark:text-white">{Number(ubicacion.unidades).toLocaleString('es-VE')}</Td>
               <Td><BadgeEstado activo={activa} activoLabel="Activa" inactivoLabel="Inactiva" /></Td>
-              <Td align="right">
-                <Acciones>
-                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(ubicacion)}>
-                    Editar
-                  </Boton>
+              <Td align="center"><Acciones>
+                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(ubicacion)} title="Editar" aria-label="Editar"></Boton>
                   {activa ? (
-                    <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => desactivar(ubicacion)}>
-                      Desactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => desactivar(ubicacion)} title="Desactivar" aria-label="Desactivar"></Boton>
                   ) : (
-                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(ubicacion)}>
-                      Reactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(ubicacion)} title="Reactivar" aria-label="Reactivar"></Boton>
                   )}
                   <Boton
                     tamano="sm"
@@ -310,9 +303,7 @@ const CrudUbicaciones = () => {
                     disabled={!ubicacion.puede_eliminar}
                     title={!ubicacion.puede_eliminar ? 'Tiene sububicaciones, inventario o referencias.' : undefined}
                     onClick={() => eliminar(ubicacion)}
-                  >
-                    Eliminar
-                  </Boton>
+                   aria-label="Eliminar"></Boton>
                 </Acciones>
               </Td>
             </tr>

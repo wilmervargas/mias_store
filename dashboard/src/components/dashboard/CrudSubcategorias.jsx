@@ -210,7 +210,7 @@ const CrudSubcategorias = () => {
             <Th>Nombre</Th>
             <Th>Categoría</Th>
             <Th>Estado</Th>
-            <Th align="right">Acciones</Th>
+            <Th align="center">Acciones</Th>
           </>
         }
       >
@@ -222,23 +222,14 @@ const CrudSubcategorias = () => {
               <Td className="font-bold text-gray-900 dark:text-white">{sub.nombre}</Td>
               <Td className="text-gray-400">{sub.categoria_nombre || '—'}</Td>
               <Td><BadgeEstado activo={activa} activoLabel="Activa" inactivoLabel="Inactiva" /></Td>
-              <Td align="right">
-                <Acciones>
-                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(sub)}>
-                    Editar
-                  </Boton>
+              <Td align="center"><Acciones>
+                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(sub)} title="Editar" aria-label="Editar"></Boton>
                   {activa ? (
-                    <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => desactivar(sub)}>
-                      Desactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => desactivar(sub)} title="Desactivar" aria-label="Desactivar"></Boton>
                   ) : (
-                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(sub)}>
-                      Reactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(sub)} title="Reactivar" aria-label="Reactivar"></Boton>
                   )}
-                  <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminar(sub)}>
-                    Eliminar
-                  </Boton>
+                  <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminar(sub)} title="Eliminar" aria-label="Eliminar"></Boton>
                 </Acciones>
               </Td>
             </tr>

@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- Migracion: Tabla de unidades de medida
 -- Base de datos: mias_store
 -- Idempotente: puede ejecutarse varias veces sin romper datos.
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS unidades (
   UNIQUE KEY uq_unidades_nombre (nombre),
   UNIQUE KEY uq_unidades_abreviatura (abreviatura),
   KEY idx_unidades_estatus (idestatus)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 2. Semilla de unidades base
 INSERT IGNORE INTO unidades (id, nombre, abreviatura, idestatus) VALUES

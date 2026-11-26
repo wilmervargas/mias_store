@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- Mia's Store - Esquema de autenticacion, roles y permisos
 -- Motor: MySQL 8.x / MariaDB
 -- Base de datos: mias_store
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
     UNIQUE KEY uq_users_email (email),
     KEY idx_users_active (is_active),
     KEY idx_users_superuser (is_superuser)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
 -- 2. Roles
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS roles (
     created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     UNIQUE KEY uq_roles_name (name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
 -- 3. Permisos (formato modulo.accion)
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS permissions (
     PRIMARY KEY (id),
     UNIQUE KEY uq_permissions_code (code),
     KEY idx_permissions_module (module)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
 -- 4. Relacion usuarios <-> roles
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
     KEY idx_user_roles_role (role_id),
     CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_user_roles_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
 -- 5. Relacion roles <-> permisos
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS role_permissions (
     KEY idx_role_permissions_permission (permission_id),
     CONSTRAINT fk_role_permissions_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE,
     CONSTRAINT fk_role_permissions_permission FOREIGN KEY (permission_id) REFERENCES permissions (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ------------------------------------------------------------
 -- 6. Overrides por usuario (permitir / denegar explicitamente)
@@ -93,4 +93,5 @@ CREATE TABLE IF NOT EXISTS user_permissions (
     KEY idx_user_permissions_permission (permission_id),
     CONSTRAINT fk_user_permissions_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_user_permissions_permission FOREIGN KEY (permission_id) REFERENCES permissions (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+

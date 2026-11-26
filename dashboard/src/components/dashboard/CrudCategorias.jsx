@@ -204,7 +204,7 @@ const CrudCategorias = () => {
             <Th align="right">Subcategorías</Th>
             <Th align="right">Productos</Th>
             <Th>Estado</Th>
-            <Th align="right">Acciones</Th>
+            <Th align="center">Acciones</Th>
           </>
         }
       >
@@ -218,11 +218,8 @@ const CrudCategorias = () => {
               <Td align="right" className="text-gray-300">{categoria.total_subcategorias}</Td>
               <Td align="right" className="text-emerald-400 font-bold">{categoria.total_productos}</Td>
               <Td><BadgeEstado activo={activa} activoLabel="Activa" inactivoLabel="Inactiva" /></Td>
-              <Td align="right">
-                <Acciones>
-                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(categoria)}>
-                    Editar
-                  </Boton>
+              <Td align="center"><Acciones>
+                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(categoria)} title="Editar" aria-label="Editar"></Boton>
                   {activa ? (
                     <Boton
                       tamano="sm"
@@ -231,13 +228,9 @@ const CrudCategorias = () => {
                       disabled={!categoria.puede_desactivar}
                       title={!categoria.puede_desactivar ? 'Tiene productos vinculados. Reasígnalos primero.' : undefined}
                       onClick={() => desactivar(categoria)}
-                    >
-                      Desactivar
-                    </Boton>
+                     aria-label="Desactivar"></Boton>
                   ) : (
-                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(categoria)}>
-                      Reactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(categoria)} title="Reactivar" aria-label="Reactivar"></Boton>
                   )}
                   <Boton
                     tamano="sm"
@@ -246,9 +239,7 @@ const CrudCategorias = () => {
                     disabled={!categoria.puede_eliminar}
                     title={!categoria.puede_eliminar ? 'Solo se puede eliminar si no tiene productos ni subcategorías.' : undefined}
                     onClick={() => eliminar(categoria)}
-                  >
-                    Eliminar
-                  </Boton>
+                   aria-label="Eliminar"></Boton>
                 </Acciones>
               </Td>
             </tr>

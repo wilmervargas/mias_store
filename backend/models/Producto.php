@@ -150,7 +150,7 @@ class Producto
              JOIN ubicaciones u ON u.id = i.ubicacion_id
              JOIN almacenes a ON a.id = u.almacen_id
              JOIN tipos_ubicacion t ON t.id = u.idtipo_ubicacion
-             WHERE i.producto_id = :p
+             WHERE i.producto_id = :p AND i.cantidad > 0
              ORDER BY a.nombre, u.ruta"
         );
         $stmt->execute([':p' => $id]);
@@ -596,12 +596,18 @@ class Producto
         }
 
         Inventario::asegurarProductoAlmacen($productoId, $almacenId);
+        // Una presentación/fila debe quedar vinculada solo al almacén seleccionado
+        $db->prepare("DELETE FROM producto_almacen WHERE producto_id = :p AND almacen_id <> :a")
+           ->execute([':p' => $productoId, ':a' => $almacenId]);
 
         $stmt = $db->prepare("SELECT stock FROM productos WHERE id = :id LIMIT 1");
         $stmt->execute([':id' => $productoId]);
         $stockActual = (int) $stmt->fetchColumn();
 
         if ($esNuevo) {
+            // Regla: en creación, stock inicial = stock actual
+            $db->prepare("UPDATE productos SET stock_inicial = :si WHERE id = :id AND es_base = 0")
+               ->execute([':si' => $stockDeseado, ':id' => $productoId]);
             if ($stockDeseado > 0) {
                 Inventario::registrar([
                     'tipo'                 => 'entrada',
@@ -617,17 +623,74 @@ class Producto
             return;
         }
 
-        if ($stockDeseado === $stockActual) {
+        // Si cambió de almacén, mover inventario de otros almacenes al almacén/ubicación destino
+        if (!$esNuevo) {
+            $stmtOtros = $db->prepare(
+                "SELECT i.id, i.ubicacion_id, i.cantidad, u.almacen_id
+                 FROM inventario i JOIN ubicaciones u ON u.id = i.ubicacion_id
+                 WHERE i.producto_id = :p AND u.almacen_id <> :a AND i.cantidad > 0
+                 FOR UPDATE"
+            );
+            $stmtOtros->execute([':p' => $productoId, ':a' => $almacenId]);
+            foreach ($stmtOtros->fetchAll() as $otroAlm) {
+                $cantMover = (int) $otroAlm['cantidad'];
+                if ($cantMover <= 0) continue;
+                $stmtT = $db->prepare("SELECT id, cantidad FROM inventario WHERE producto_id=:p AND ubicacion_id=:u LIMIT 1 FOR UPDATE");
+                $stmtT->execute([':p' => $productoId, ':u' => $ubicacionId]);
+                $tRow = $stmtT->fetch();
+                if ($tRow) {
+                    $db->prepare("UPDATE inventario SET cantidad = cantidad + :c WHERE id=:id")->execute([':c'=>$cantMover, ':id'=>(int)$tRow['id']]);
+                } else {
+                    $db->prepare("INSERT INTO inventario (producto_id, ubicacion_id, cantidad) VALUES (:p,:u,:c)")->execute([':p'=>$productoId, ':u'=>$ubicacionId, ':c'=>$cantMover]);
+                }
+                $db->prepare("UPDATE inventario SET cantidad = 0 WHERE id=:id")->execute([':id'=>(int)$otroAlm['id']]);
+            }
+        }
+
+        $delta = $stockDeseado - $stockActual;
+
+        // Consolidar stock del producto en el almacén hacia la ubicación seleccionada
+        $stmt = $db->prepare(
+            "SELECT i.id, i.ubicacion_id, i.cantidad
+             FROM inventario i
+             JOIN ubicaciones u ON u.id = i.ubicacion_id
+             WHERE i.producto_id = :p AND u.almacen_id = :a
+             FOR UPDATE"
+        );
+        $stmt->execute([':p' => $productoId, ':a' => $almacenId]);
+        $invRows = $stmt->fetchAll();
+        $enUbicacion = 0;
+        $otros = [];
+        foreach ($invRows as $ir) {
+            $uid = (int) $ir['ubicacion_id'];
+            $cant = (int) $ir['cantidad'];
+            if ($uid === $ubicacionId) { $enUbicacion += $cant; }
+            else { $otros[] = ['id' => (int)$ir['id'], 'ubicacion_id' => $uid, 'cantidad' => $cant]; }
+        }
+
+        // Mover stock de otras ubicaciones del mismo almacén a la seleccionada
+        foreach ($otros as $otro) {
+            if ($otro['cantidad'] <= 0) continue;
+            // sumar al target
+            $stmtUp = $db->prepare("SELECT id, cantidad FROM inventario WHERE producto_id=:p AND ubicacion_id=:u LIMIT 1 FOR UPDATE");
+            $stmtUp->execute([':p' => $productoId, ':u' => $ubicacionId]);
+            $targetRow = $stmtUp->fetch();
+            if ($targetRow) {
+                $db->prepare("UPDATE inventario SET cantidad = cantidad + :c WHERE id=:id")
+                   ->execute([':c' => $otro['cantidad'], ':id' => (int)$targetRow['id']]);
+            } else {
+                $db->prepare("INSERT INTO inventario (producto_id, ubicacion_id, cantidad) VALUES (:p,:u,:c)")
+                   ->execute([':p' => $productoId, ':u' => $ubicacionId, ':c' => $otro['cantidad']]);
+            }
+            $db->prepare("UPDATE inventario SET cantidad = 0 WHERE id=:id")->execute([':id' => $otro['id']]);
+            $enUbicacion += $otro['cantidad'];
+        }
+
+        if ($delta === 0) {
             return;
         }
 
-        $stmt = $db->prepare("SELECT cantidad FROM inventario WHERE producto_id = :p AND ubicacion_id = :u LIMIT 1");
-        $stmt->execute([':p' => $productoId, ':u' => $ubicacionId]);
-        $enUbicacion = $stmt->fetchColumn();
-        $enUbicacion = $enUbicacion === false ? 0 : (int) $enUbicacion;
-        $delta = $stockDeseado - $stockActual;
         $objetivoUbicacion = $enUbicacion + $delta;
-
         if ($objetivoUbicacion < 0) {
             throw new RuntimeException('El stock de la ubicacion seleccionada no permite reducir esa cantidad');
         }
@@ -644,8 +707,13 @@ class Producto
         ]);
     }
 
-    private static function validarFilasUnicas(array $filas, string $codigoProducto): void
+    private static function validarFilasUnicas(PDO $db, array $filas, string $codigoProducto, int $baseId = 0): void
     {
+        $idsPayload = [];
+        foreach ($filas as $f) {
+            $fid = (int) ($f['id'] ?? $f['producto_id'] ?? 0);
+            if ($fid > 0) $idsPayload[] = $fid;
+        }
         $vistos = [];
         foreach ($filas as $i => $fila) {
             $almacen = (int) ($fila['almacen_id'] ?? 0);
@@ -653,11 +721,35 @@ class Producto
             $color = (int) ($fila['idcolor'] ?? 1);
             $talla = (int) ($fila['idtalla'] ?? 1);
             $key = implode('|', [$codigoProducto, $almacen, $ubicacion, $color, $talla]);
+            $n = $i + 1;
             if (isset($vistos[$key])) {
-                $n = $i + 1;
                 throw new InvalidArgumentException(
                     "Fila {$n}: ya existe otra presentación con la misma combinación SKU + almacén + ubicación + color + talla."
                 );
+            }
+            if ($baseId > 0) {
+                $ubicacionId = ($ubicacion === '0') ? null : (int) $ubicacion;
+                $sql = "SELECT p.id FROM productos p LEFT JOIN producto_almacen pa ON pa.producto_id = p.id AND pa.almacen_id = :alm WHERE p.producto_base_id = :base AND p.es_base = 0 AND pa.almacen_id = :alm2 AND p.idcolor = :color AND p.idtalla = :talla";
+                $params = [':base'=>$baseId, ':alm'=>$almacen, ':alm2'=>$almacen, ':color'=>$color, ':talla'=>$talla];
+                if ($idsPayload) {
+                    $ph = [];
+                    foreach ($idsPayload as $k => $pid) { $phk = ":pid$k"; $ph[] = $phk; $params[$phk] = $pid; }
+                    $sql .= " AND p.id NOT IN (" . implode(',', $ph) . ")";
+                }
+                if ($ubicacionId === null) {
+                    $sql .= " AND NOT EXISTS (SELECT 1 FROM inventario i2 JOIN ubicaciones u2 ON u2.id=i2.ubicacion_id WHERE i2.producto_id=p.id AND u2.almacen_id=:alm3)";
+                    $params[':alm3'] = $almacen;
+                } else {
+                    $sql .= " AND EXISTS (SELECT 1 FROM inventario i2 WHERE i2.producto_id=p.id AND i2.ubicacion_id=:ub)";
+                    $params[':ub'] = $ubicacionId;
+                }
+                $sql .= " LIMIT 1";
+                $stmt = $db->prepare($sql); $stmt->execute($params);
+                if ($stmt->fetchColumn()) {
+                    throw new InvalidArgumentException(
+                        "Fila {$n}: ya existe otra presentación con la misma combinación SKU + almacén + ubicación + color + talla."
+                    );
+                }
             }
             $vistos[$key] = true;
         }
@@ -701,7 +793,7 @@ class Producto
 
         try {
             $filas = self::normalizarFilas($datos);
-            self::validarFilasUnicas($filas, trim((string) ($datos['sku_base'] ?? $datos['codigo_producto'] ?? '')));
+            self::validarFilasUnicas($db, $filas, trim((string) ($datos['sku_base'] ?? $datos['codigo_producto'] ?? '')), 0);
 
             $baseData = $datos;
             $baseData['producto_base_id'] = null;
@@ -779,7 +871,7 @@ class Producto
             }
 
             $filas = self::normalizarFilas($datos);
-            self::validarFilasUnicas($filas, trim((string) ($baseActual['codigo_producto'] ?? $baseActual['sku_base'] ?? '')));
+            self::validarFilasUnicas($db, $filas, trim((string) ($baseActual['codigo_producto'] ?? $baseActual['sku_base'] ?? '')), (int) $baseId);
 
             $baseData = array_merge($baseActual, $datos);
             $baseData['producto_base_id'] = null;
@@ -983,6 +1075,29 @@ class Producto
                      WHERE producto_id = :p AND almacen_id = :a"
                 );
                 $stmt->execute([':u' => $ubicacionId, ':p' => $id, ':a' => $almacenId]);
+            }
+
+            // Validar clave única: SKU(cabecera) + almacen + ubicacion + color + talla
+            $baseIdDup = (int) ($actual['producto_base_id'] ?? 0);
+            if ($baseIdDup > 0) {
+                $sqlDup = "SELECT p.id FROM productos p
+                           LEFT JOIN producto_almacen pa ON pa.producto_id=p.id AND pa.almacen_id=:alm
+                           WHERE p.producto_base_id=:base AND p.es_base=0 AND p.id<>:id
+                             AND pa.almacen_id=:alm2 AND p.idcolor=:color AND p.idtalla=:talla";
+                $paramsDup = [':base'=>$baseIdDup, ':id'=>$id, ':alm'=>$almacenId, ':alm2'=>$almacenId, ':color'=>$idcolor, ':talla'=>$idtalla];
+                if ($ubicacionId === null) {
+                    $sqlDup .= " AND NOT EXISTS (SELECT 1 FROM inventario i2 JOIN ubicaciones u2 ON u2.id=i2.ubicacion_id WHERE i2.producto_id=p.id AND u2.almacen_id=:alm3)";
+                    $paramsDup[':alm3'] = $almacenId;
+                } else {
+                    $sqlDup .= " AND EXISTS (SELECT 1 FROM inventario i2 WHERE i2.producto_id=p.id AND i2.ubicacion_id=:ub)";
+                    $paramsDup[':ub'] = $ubicacionId;
+                }
+                $sqlDup .= " LIMIT 1";
+                $stmtDup = $db->prepare($sqlDup);
+                $stmtDup->execute($paramsDup);
+                if ($stmtDup->fetchColumn()) {
+                    throw new InvalidArgumentException('Ya existe otra presentación con la misma combinación SKU + almacén + ubicación + color + talla.');
+                }
             }
 
             if (array_key_exists('stock', $datos) && $datos['stock'] !== '' && $datos['stock'] !== null) {

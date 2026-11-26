@@ -199,7 +199,7 @@ const CrudMarcas = () => {
             <Th align="right">Modelos</Th>
             <Th align="right">Productos</Th>
             <Th>Estado</Th>
-            <Th align="right">Acciones</Th>
+            <Th align="center">Acciones</Th>
           </>
         }
       >
@@ -212,11 +212,8 @@ const CrudMarcas = () => {
               <Td align="right" className="text-gray-300">{marca.total_modelos}</Td>
               <Td align="right" className="text-cyan-400 font-bold">{marca.total_productos}</Td>
               <Td><BadgeEstado activo={activa} activoLabel="Activa" inactivoLabel="Inactiva" /></Td>
-              <Td align="right">
-                <Acciones>
-                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(marca)}>
-                    Editar
-                  </Boton>
+              <Td align="center"><Acciones>
+                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(marca)} title="Editar" aria-label="Editar"></Boton>
                   {activa ? (
                     <Boton
                       tamano="sm"
@@ -225,13 +222,9 @@ const CrudMarcas = () => {
                       disabled={!marca.puede_desactivar}
                       title={!marca.puede_desactivar ? 'Tiene productos vinculados. Reasígnalos primero.' : undefined}
                       onClick={() => desactivar(marca)}
-                    >
-                      Desactivar
-                    </Boton>
+                     aria-label="Desactivar"></Boton>
                   ) : (
-                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(marca)}>
-                      Reactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(marca)} title="Reactivar" aria-label="Reactivar"></Boton>
                   )}
                   <Boton
                     tamano="sm"
@@ -240,9 +233,7 @@ const CrudMarcas = () => {
                     disabled={!marca.puede_eliminar}
                     title={!marca.puede_eliminar ? 'Solo se puede eliminar si no tiene productos ni modelos vinculados.' : undefined}
                     onClick={() => eliminar(marca)}
-                  >
-                    Eliminar
-                  </Boton>
+                   aria-label="Eliminar"></Boton>
                 </Acciones>
               </Td>
             </tr>

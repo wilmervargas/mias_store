@@ -309,7 +309,7 @@ const CrudCatalogos = ({ tabFijo = null }) => {
             {tab === 'unidades' && <Th>Abreviatura</Th>}
             <Th align="right">Productos</Th>
             <Th>Estado</Th>
-            <Th align="right">Acciones</Th>
+            <Th align="center">Acciones</Th>
           </>
         }
       >
@@ -333,11 +333,8 @@ const CrudCatalogos = ({ tabFijo = null }) => {
               {tab === 'unidades' && <Td className="font-mono text-cyan-400">{item.abreviatura || '—'}</Td>}
               <Td align="right" className="text-gray-300">{item.total_productos}</Td>
               <Td><BadgeEstado activo={activo} /></Td>
-              <Td align="right">
-                <Acciones>
-                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(item)}>
-                    Editar
-                  </Boton>
+              <Td align="center"><Acciones>
+                  <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(item)} title="Editar" aria-label="Editar"></Boton>
                   {activo ? (
                     <Boton
                       tamano="sm"
@@ -346,13 +343,9 @@ const CrudCatalogos = ({ tabFijo = null }) => {
                       disabled={item.puede_desactivar === false}
                       title={item.puede_desactivar === false ? 'Tiene productos vinculados. Reasígnalos primero.' : undefined}
                       onClick={() => desactivar(item)}
-                    >
-                      Desactivar
-                    </Boton>
+                     aria-label="Desactivar"></Boton>
                   ) : (
-                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(item)}>
-                      Reactivar
-                    </Boton>
+                    <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => reactivar(item)} title="Reactivar" aria-label="Reactivar"></Boton>
                   )}
                   <Boton
                     tamano="sm"
@@ -361,9 +354,7 @@ const CrudCatalogos = ({ tabFijo = null }) => {
                     disabled={!item.puede_eliminar}
                     title={!item.puede_eliminar ? 'Tiene productos vinculados.' : undefined}
                     onClick={() => eliminar(item)}
-                  >
-                    Eliminar
-                  </Boton>
+                   aria-label="Eliminar"></Boton>
                 </Acciones>
               </Td>
             </tr>
