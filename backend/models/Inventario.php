@@ -474,25 +474,34 @@ class Inventario
                 "INSERT INTO movimientos_inventario
                     (tipo, producto_id, almacen_origen_id, almacen_destino_id,
                      ubicacion_origen_id, ubicacion_destino_id, cantidad,
-                     costo_unitario, referencia, motivo, usuario_id)
+                     costo_unitario, referencia, motivo, concepto, usuario_id)
                  VALUES
                     (:tipo, :prod, :ao, :ad, :uo, :ud, :cant,
-                     :costo, :ref, :motivo, :usuario)"
+                     :costo, :ref, :motivo, :concepto, :usuario)"
             );
             $stmt->execute([
-                ':tipo'    => $tipo,
-                ':prod'    => $productoId,
-                ':ao'      => $almacenOrigen,
-                ':ad'      => $almacenDestino,
-                ':uo'      => $ubicacionOrigen,
-                ':ud'      => $ubicacionDestino,
-                ':cant'    => abs($deltaRegistrado) > 0 ? abs($deltaRegistrado) : $cantidad,
-                ':costo'   => isset($m['costo_unitario']) && $m['costo_unitario'] !== '' ? (float) $m['costo_unitario'] : null,
-                ':ref'     => $m['referencia'] ?? null,
-                ':motivo'  => $m['motivo'] ?? null,
-                ':usuario' => !empty($m['usuario_id']) ? (int) $m['usuario_id'] : null,
+                ':tipo'     => $tipo,
+                ':prod'     => $productoId,
+                ':ao'       => $almacenOrigen,
+                ':ad'       => $almacenDestino,
+                ':uo'       => $ubicacionOrigen,
+                ':ud'       => $ubicacionDestino,
+                ':cant'     => abs($deltaRegistrado) > 0 ? abs($deltaRegistrado) : $cantidad,
+                ':costo'    => isset($m['costo_unitario']) && $m['costo_unitario'] !== '' ? (float) $m['costo_unitario'] : null,
+                ':ref'      => $m['referencia'] ?? null,
+                ':motivo'   => $m['motivo'] ?? null,
+                ':concepto' => !empty($m['concepto']) ? trim((string) $m['concepto']) : null,
+                ':usuario'  => !empty($m['usuario_id']) ? (int) $m['usuario_id'] : null,
             ]);
             $movId = (int) $db->lastInsertId();
+
+            // Mantener productos.stock sincronizado con inventario
+            $sync = $db->prepare(
+                "UPDATE productos p SET p.stock = (
+                    SELECT COALESCE(SUM(i.cantidad), 0) FROM inventario i WHERE i.producto_id = p.id
+                 ) WHERE p.id = :id"
+            );
+            $sync->execute([':id' => $productoId]);
 
             if ($propia) {
                 $db->commit();

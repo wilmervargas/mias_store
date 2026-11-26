@@ -38,13 +38,13 @@ export const Tabla = ({
 );
 
 export const Th = ({ children, align = 'left', compacta = false, className = '' }) => (
-  <th className={`${compacta ? 'px-2 py-2' : 'p-3.5'} whitespace-nowrap ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'} ${className}`}>
+  <th className={`${compacta ? 'px-2 py-1' : 'p-3.5'} whitespace-nowrap ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'} ${className}`}>
     {children}
   </th>
 );
 
 export const Td = ({ children, align = 'left', compacta = false, className = '' }) => (
-  <td className={`${compacta ? 'px-2 py-2' : 'p-3.5'} text-gray-700 dark:text-gray-300 ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'} ${className}`}>
+  <td className={`${compacta ? 'px-2 py-0.5' : 'p-3.5'} text-gray-700 dark:text-gray-300 ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'} ${className}`}>
     {children}
   </td>
 );

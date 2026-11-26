@@ -118,7 +118,20 @@ if ($metodo === 'POST' && ($url === 'seguridad/restablecer-password' || $url ===
 // 1. PRODUCTOS
 // ==============================================================
 
-// Subida de imagen -> va ANTES de /productos/{id}
+// Imágenes de producto -> van ANTES de /productos/{id}
+if ($metodo === 'GET' && preg_match('#^(?:api/)?productos/([0-9]+)/imagenes$#', $url, $m)) {
+    $ctrlProd->listarImagenes((int) $m[1]);
+    exit;
+}
+if ($metodo === 'POST' && preg_match('#^(?:api/)?productos/([0-9]+)/imagenes$#', $url, $m)) {
+    $ctrlProd->subirImagenes((int) $m[1]);
+    exit;
+}
+if ($metodo === 'DELETE' && preg_match('#^(?:api/)?productos/imagenes/([0-9]+)$#', $url, $m)) {
+    $ctrlProd->eliminarImagenProducto((int) $m[1]);
+    exit;
+}
+// Subida de imagen (legacy, una sola) -> va ANTES de /productos/{id}
 if ($metodo === 'POST' && preg_match('#^(?:api/)?productos/([0-9]+)/imagen$#', $url, $m)) {
     $ctrlProd->subirImagen((int) $m[1]);
     exit;

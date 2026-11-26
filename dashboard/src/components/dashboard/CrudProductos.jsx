@@ -73,7 +73,11 @@ const CrudProductos = () => {
       // Cargar detalles por producto para mostrar en la misma vista
       const entradas = await Promise.all(lista.map(async (p) => {
         const det = await api.get(`productos/${p.id}`);
-        return [p.id, det.success ? (det.datos?.filas || []) : []];
+        let filas = det.success ? (det.datos?.filas || []) : [];
+        if (filtros.idcolor) filas = filas.filter((f) => String(f.idcolor) === String(filtros.idcolor));
+        if (filtros.idtalla) filas = filas.filter((f) => String(f.idtalla) === String(filtros.idtalla));
+        if (filtros.almacen) filas = filas.filter((f) => (f.stock_por_almacen || []).some((a) => String(a.almacen_id) === String(filtros.almacen)));
+        return [p.id, filas];
       }));
       setDetalles(Object.fromEntries(entradas));
     } else {
@@ -396,8 +400,8 @@ const CrudProductos = () => {
             <Th compacta align="right">Precio / Costo</Th>
             <Th compacta className="border-l-2 border-purple-200 dark:border-purple-500/30">Almacén</Th>
             <Th compacta>Ubicación</Th>
-            <Th compacta>Color / Talla</Th>
-            <Th compacta align="right">Stock almacén</Th>
+            <Th compacta>C/Talla</Th>
+            <Th compacta align="right">Stock</Th>
             <Th compacta align="center">Acciones</Th>
           </>
         }
@@ -465,7 +469,8 @@ const CrudProductos = () => {
                   <img
                     src={`http://localhost:8000/imagenes/${producto.imagen}`}
                     alt={producto.nombre}
-                    className="w-[52px] h-[52px] rounded-lg object-contain bg-gray-950 border border-gray-800"
+                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="42" height="52"><rect width="100%" height="100%" fill="%23111827"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%236b7280" font-size="8">Sin foto</text></svg>'; }}
+                    className="w-[42px] h-[52px] rounded-lg object-contain bg-gray-950 border border-gray-800"
                   />
                 </Td>
                 <Td compacta className="font-mono text-[10px] text-cyan-400">
@@ -497,11 +502,11 @@ const CrudProductos = () => {
                   {gruposAlmacen.length === 0 ? (
                     <span className="text-gray-500">-</span>
                   ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-0">
                       {gruposAlmacen.map((grupo, gIdx) => (
-                        <div key={`${producto.id}-almg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? 'pt-1 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                        <div key={`${producto.id}-almg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? '' : ''}`}>
                           {grupo.items.map((item, iIdx) => (
-                            <div key={`${producto.id}-${item.fila.id}-${grupo.key}-a-${iIdx}`} className={`min-h-[34px] flex flex-col justify-center ${iIdx > 0 ? 'border-t border-dashed border-gray-100 dark:border-gray-800/60' : ''}`}>
+                            <div key={`${producto.id}-${item.fila.id}-${grupo.key}-a-${iIdx}`} className={`min-h-[20px] flex flex-col justify-center ${iIdx > 0 ? '' : ''}`}>
                               {iIdx === 0 ? (
                                 grupo.almacen ? (
                                   <span className="rounded-md bg-cyan-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
@@ -520,16 +525,16 @@ const CrudProductos = () => {
                   {gruposAlmacen.length === 0 ? (
                     <span className="text-gray-500">-</span>
                   ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-0">
                       {gruposAlmacen.map((grupo, gIdx) => (
-                        <div key={`${producto.id}-ubg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? 'pt-1 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                        <div key={`${producto.id}-ubg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? '' : ''}`}>
                           {grupo.items.map((item, iIdx) => {
                             const ubics = Array.isArray(item.fila?.ubicaciones)
                               ? item.fila.ubicaciones.filter((u) => !grupo.almacen?.almacen_id || Number(u.almacen_id) === Number(grupo.almacen.almacen_id))
                               : [];
                             const ubicCod = [...new Set(ubics.map((u) => u.ubicacion_codigo || u.codigo).filter(Boolean))].join(', ');
                             return (
-                              <div key={`${producto.id}-${item.fila.id}-${grupo.key}-u-${iIdx}`} className={`min-h-[34px] flex flex-col justify-center ${iIdx > 0 ? 'border-t border-dashed border-gray-100 dark:border-gray-800/60' : ''}`}>
+                              <div key={`${producto.id}-${item.fila.id}-${grupo.key}-u-${iIdx}`} className={`min-h-[20px] flex flex-col justify-center ${iIdx > 0 ? '' : ''}`}>
                                 <span className="font-mono text-[10px] text-gray-600 dark:text-gray-300">{ubicCod || '-'}</span>
                               </div>
                             );
@@ -543,11 +548,11 @@ const CrudProductos = () => {
                   {gruposAlmacen.length === 0 ? (
                     <span className="text-gray-500">-</span>
                   ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-0">
                       {gruposAlmacen.map((grupo, gIdx) => (
-                        <div key={`${producto.id}-ctg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? 'pt-1 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                        <div key={`${producto.id}-ctg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? '' : ''}`}>
                           {grupo.items.map(({ fila }, iIdx) => (
-                            <div key={`${producto.id}-${fila.id}-${grupo.key}-ct-${iIdx}`} className={`min-h-[34px] flex flex-wrap items-center content-center gap-1.5 ${iIdx > 0 ? 'border-t border-dashed border-gray-100 dark:border-gray-800/60' : ''}`}>
+                            <div key={`${producto.id}-${fila.id}-${grupo.key}-ct-${iIdx}`} className={`min-h-[20px] flex flex-wrap items-center content-center gap-1.5 ${iIdx > 0 ? '' : ''}`}>
                               <span className="w-4 h-4 rounded-full border border-gray-300 shadow-sm dark:border-gray-600 shrink-0" style={{ background: fila.color_hex || '#d1d5db' }} title={fila.color || ''} />
                               <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">{fila.talla || '-'}</span>
                             </div>
@@ -561,13 +566,13 @@ const CrudProductos = () => {
                   {gruposAlmacen.length === 0 ? (
                     <span className="text-gray-500">-</span>
                   ) : (
-                    <div className="space-y-1">
+                    <div className="space-y-0">
                       {gruposAlmacen.map((grupo, gIdx) => (
-                        <div key={`${producto.id}-stg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? 'pt-1 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                        <div key={`${producto.id}-stg-${grupo.key}-${gIdx}`} className={`${gIdx > 0 ? '' : ''}`}>
                           {grupo.items.map(({ fila, almacen }, iIdx) => {
                             const stockFila = Number(almacen?.stock ?? fila.stock ?? 0);
                             return (
-                              <div key={`${producto.id}-${fila.id}-${grupo.key}-st-${iIdx}`} className={`min-h-[34px] flex items-center justify-end gap-1 ${iIdx > 0 ? 'border-t border-dashed border-gray-100 dark:border-gray-800/60' : ''}`}>
+                              <div key={`${producto.id}-${fila.id}-${grupo.key}-st-${iIdx}`} className={`min-h-[20px] flex items-center justify-end gap-1 ${iIdx > 0 ? '' : ''}`}>
                                 <span className={`font-bold ${stockFila <= 0 ? 'text-rose-500' : 'text-gray-900 dark:text-white'}`}>{stockFila}</span>
                                 <span className="text-[10px] text-gray-500">{producto.unidad_abreviatura || producto.unidad_medida || ''}</span>
                               </div>
@@ -625,6 +630,7 @@ const CrudProductos = () => {
 };
 
 export default CrudProductos;
+
 
 
 

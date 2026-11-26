@@ -64,12 +64,16 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
     precio: productoEditar?.precio > 0 ? productoEditar.precio : (primeraFila?.precio ?? ''),
     preciofull: productoEditar?.preciofull > 0 ? productoEditar.preciofull : (primeraFila?.preciofull ?? ''),
     stock_inicial: productoEditar?.stock_inicial ?? '',
+    stock_minimo: productoEditar?.stock_minimo ?? 0,
+    stock_maximo: productoEditar?.stock_maximo ?? '',
     imagen: productoEditar?.imagen || 'sin-foto.png',
     idestatus: productoEditar?.idestatus ?? 1,
   });
 
   const [filas, setFilas] = useState(filasIniciales);
   const [filasEliminadas, setFilasEliminadas] = useState([]);
+  const [ajuste, setAjuste] = useState(null); // { fila, tipo, concepto, cantidad, motivo, costo_unitario }
+  const [guardandoAjuste, setGuardandoAjuste] = useState(false);
   const [categorias, setCategorias] = useState([]);
   const [subcategorias, setSubcategorias] = useState([]);
   const [marcas, setMarcas] = useState([]);
@@ -79,7 +83,8 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
   const [unidades, setUnidades] = useState([]);
   const [almacenes, setAlmacenes] = useState([]);
   const [ubicacionesPorAlmacen, setUbicacionesPorAlmacen] = useState({});
-  const [archivoImagen, setArchivoImagen] = useState(null);
+  const [imagenesNuevas, setImagenesNuevas] = useState([]);
+  const [imagenesExistentes, setImagenesExistentes] = useState([]);
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
@@ -114,6 +119,17 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
     const ids = [...new Set(filas.map((f) => f.almacen_id).filter(Boolean))];
     ids.forEach((id) => cargarUbicaciones(id));
   }, [filas]);
+
+  useEffect(() => {
+    if (ajuste?.almacen_id) cargarUbicaciones(ajuste.almacen_id);
+  }, [ajuste?.almacen_id]);
+
+  useEffect(() => {
+    if (!editando || !productoEditar?.id) { setImagenesExistentes([]); return; }
+    api.get(`productos/${productoEditar.id}/imagenes`).then((res) => {
+      if (res.success) setImagenesExistentes(res.datos || []);
+    });
+  }, [editando, productoEditar?.id]);
 
   const set = (campo, valor) => setFormData((prev) => ({ ...prev, [campo]: valor }));
 
@@ -172,6 +188,53 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
     return mismaCategoria && activaOActual;
   });
 
+  const eliminarImagenExistente = async (imgId) => {
+    if (!window.confirm('¿Eliminar esta imagen?')) return;
+    const res = await api.delete('productos/imagenes', imgId);
+    if (res.success) setImagenesExistentes((prev) => prev.filter((x) => x.id !== imgId));
+    else alert(res.error || 'No se pudo eliminar la imagen');
+  };
+
+  const guardarAjuste = async () => {
+    if (!ajuste?.filaId) return;
+    const cantidad = Number(ajuste.cantidad);
+    if (!Number.isFinite(cantidad) || cantidad <= 0) { alert('Indica una cantidad mayor a 0.'); return; }
+    if (!ajuste.almacen_id) { alert('Selecciona el almacén.'); return; }
+
+    const esEntrada = ajuste.tipo === 'entrada';
+    const ok = await confirmar({
+      titulo: 'Registrar ajuste de inventario',
+      mensaje: `Este ajuste ${esEntrada ? 'sumará' : 'restará'} ${cantidad} unidad(es) al inventario de la presentación seleccionada. También actualizará el stock actual, generará un movimiento auditado y puede afectar reportes/disponibilidad. ¿Deseas continuar?`,
+      textoConfirmar: 'Sí, registrar ajuste',
+      variante: 'peligro',
+    });
+    if (!ok) return;
+    const payload = {
+      tipo: esEntrada ? 'entrada' : 'salida',
+      producto_id: Number(ajuste.filaId),
+      cantidad,
+      concepto: ajuste.concepto,
+      motivo: ajuste.motivo || ajuste.concepto || '',
+      referencia: 'Ajuste manual',
+      ...(esEntrada
+        ? { almacen_destino_id: Number(ajuste.almacen_id), ubicacion_destino_id: ajuste.ubicacion_id ? Number(ajuste.ubicacion_id) : undefined }
+        : { almacen_origen_id: Number(ajuste.almacen_id), ubicacion_origen_id: ajuste.ubicacion_id ? Number(ajuste.ubicacion_id) : undefined }),
+    };
+
+    setGuardandoAjuste(true);
+    const res = await api.post('inventario/movimientos', payload);
+    setGuardandoAjuste(false);
+    if (!res.success) { alert(res.message || 'No se pudo registrar el ajuste.'); return; }
+
+    setFilas((prev) => prev.map((f) => {
+      if (Number(f.id) !== Number(ajuste.filaId)) return f;
+      const actual = Number(f.stock || 0);
+      const nuevo = esEntrada ? actual + cantidad : Math.max(0, actual - cantidad);
+      return { ...f, stock: nuevo };
+    }));
+    setAjuste(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.idsubcategoria) {
@@ -193,12 +256,16 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
       return;
     }
 
+    const imagenPrincipal = imagenesExistentes[0]?.imagen || 'sin-foto.png';
     const payload = {
       ...formData,
+      imagen: imagenPrincipal,
       costo,
       precio,
       preciofull,
       stock_inicial: formData.stock_inicial === '' ? 0 : Number(formData.stock_inicial),
+      stock_minimo: formData.stock_minimo === '' ? 0 : Number(formData.stock_minimo),
+      stock_maximo: formData.stock_maximo === '' ? null : Number(formData.stock_maximo),
       unidad_medida: abreviaturaUnidad,
       filas: filas.map((f) => ({
         id: f.id || undefined,
@@ -227,10 +294,10 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
     }
 
     const idFinal = productoEditar?.id || res.datos?.id;
-    if (archivoImagen && idFinal) {
-      const subida = await api.subirImagen('productos', idFinal, archivoImagen);
+    if (imagenesNuevas.length > 0 && idFinal) {
+      const subida = await api.subirImagenes('productos', idFinal, imagenesNuevas);
       if (!subida.success) {
-        alert(subida.error || 'El producto se guardó, pero la imagen no se pudo subir');
+        alert(subida.error || 'El producto se guardó, pero algunas imágenes no se pudieron subir');
       }
     }
 
@@ -289,7 +356,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
             <TextArea rows={2} value={formData.descripcion} onChange={(e) => set('descripcion', e.target.value)} placeholder="Descripción del producto" />
           </Campo>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <Campo label="Costo ($)">
               <Input type="number" step="0.01" min="0" value={formData.costo} onChange={(e) => set('costo', e.target.value)} />
             </Campo>
@@ -298,6 +365,12 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
             </Campo>
             <Campo label="Precio especial ($)">
               <Input type="number" step="0.01" min="0" value={formData.preciofull} onChange={(e) => set('preciofull', e.target.value)} />
+            </Campo>
+            <Campo label="Stock mínimo">
+              <Input type="number" min="0" value={formData.stock_minimo} onChange={(e) => set('stock_minimo', e.target.value)} />
+            </Campo>
+            <Campo label="Stock máximo">
+              <Input type="number" min="0" value={formData.stock_maximo} onChange={(e) => set('stock_maximo', e.target.value)} placeholder="Sin límite" />
             </Campo>
           </div>
 
@@ -364,8 +437,13 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
             </Campo>
           </div>
 
-          <Campo label="Imagen del producto">
-            <DropzoneImagen imagenActual={productoEditar?.imagen} onArchivo={(file) => setArchivoImagen(file)} />
+          <Campo label="Imágenes del producto" hint="Hasta 6 imágenes, ninguna obligatoria.">
+            <DropzoneImagen
+              imagenesActuales={imagenesExistentes}
+              onNuevosChange={setImagenesNuevas}
+              onEliminarExistente={eliminarImagenExistente}
+              max={6}
+            />
           </Campo>
         </div>
 
@@ -388,9 +466,16 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
                 <div key={fila._key} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[11px] font-black uppercase tracking-wider text-gray-500">Fila {idx + 1} {fila.id ? <span className="text-cyan-500">#SKU {fila.id}</span> : <span className="text-emerald-500">Nueva</span>}</p>
-                    <Boton type="button" variante="peligro" tamano="sm" icono="papelera" onClick={() => quitarFila(fila._key)}>
-                      Quitar
-                    </Boton>
+                    <div className="flex items-center gap-2">
+                      {editando && fila.id && (
+                        <Boton type="button" variante="neutral" tamano="sm" icono="ajustes" onClick={() => setAjuste({ filaId: fila.id, almacen_id: fila.almacen_id, ubicacion_id: fila.ubicacion_id, tipo: 'entrada', concepto: 'compra', cantidad: 1, motivo: '' })}>
+                          Ajustes
+                        </Boton>
+                      )}
+                      <Boton type="button" variante="peligro" tamano="sm" icono="papelera" onClick={() => quitarFila(fila._key)}>
+                        Quitar
+                      </Boton>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -443,13 +528,13 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
                         disabled={Boolean(fila.id)}
                       />
                     </Campo>
-                    <Campo label="Stock actual" hint={fila.id ? 'Al guardar, el cambio genera un ajuste auditado.' : 'Se define con el stock inicial.'}>
+                    <Campo label="Stock actual" hint={fila.id ? 'Solo cambia mediante ajustes.' : 'Se define con el stock inicial.'}>
                       <Input
                         type="number"
                         min="0"
                         value={fila.stock}
                         onChange={(e) => setFila(fila._key, 'stock', e.target.value)}
-                        disabled={!fila.id}
+                        disabled={Boolean(fila.id)}
                       />
                     </Campo>
                   </div>
@@ -464,6 +549,68 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
           </div>
         </div>
       </form>
+
+      {ajuste && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Ajuste de inventario</h4>
+              <button type="button" onClick={() => setAjuste(null)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white">✕</button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Campo label="Tipo" required>
+                <Select value={ajuste.tipo} onChange={(e) => {
+                  const tipo = e.target.value;
+                  setAjuste((p) => ({ ...p, tipo, concepto: tipo === 'entrada' ? 'compra' : 'venta' }));
+                }}>
+                  <option value="entrada">Entrada</option>
+                  <option value="salida">Salida</option>
+                </Select>
+              </Campo>
+              <Campo label="Concepto" required>
+                <Select value={ajuste.concepto} onChange={(e) => setAjuste((p) => ({ ...p, concepto: e.target.value }))}>
+                  {ajuste.tipo === 'entrada' ? (
+                    <>
+                      <option value="compra">Compra</option>
+                      <option value="otro">Otro</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="venta">Venta</option>
+                      <option value="danado">Dañado</option>
+                      <option value="extravio">Extravío</option>
+                      <option value="robo">Robo</option>
+                      <option value="otro">Otro</option>
+                    </>
+                  )}
+                </Select>
+              </Campo>
+              <Campo label="Almacén" required>
+                <Select value={ajuste.almacen_id} onChange={(e) => { setAjuste((p) => ({ ...p, almacen_id: e.target.value, ubicacion_id: '' })); }}>
+                  <option value="">Selecciona...</option>
+                  {almacenes.map((a) => <option key={a.id} value={a.id}>{a.codigo} - {a.nombre}</option>)}
+                </Select>
+              </Campo>
+              <Campo label="Ubicación">
+                <Select value={ajuste.ubicacion_id} onChange={(e) => setAjuste((p) => ({ ...p, ubicacion_id: e.target.value }))}>
+                  <option value="">Automática</option>
+                  {(ubicacionesPorAlmacen[ajuste.almacen_id] || []).map((u) => <option key={u.id} value={u.id}>{u.codigo}</option>)}
+                </Select>
+              </Campo>
+              <Campo label="Cantidad" required>
+                <Input type="number" min="1" value={ajuste.cantidad} onChange={(e) => setAjuste((p) => ({ ...p, cantidad: e.target.value }))} />
+              </Campo>
+            </div>
+            <Campo label="Motivo">
+              <Input value={ajuste.motivo} onChange={(e) => setAjuste((p) => ({ ...p, motivo: e.target.value }))} placeholder="Detalle del ajuste" />
+            </Campo>
+            <div className="flex justify-end gap-2">
+              <Boton type="button" variante="neutral" onClick={() => setAjuste(null)}>Cancelar</Boton>
+              <Boton type="button" variante="primario" onClick={guardarAjuste} disabled={guardandoAjuste}>{guardandoAjuste ? 'Guardando...' : 'Registrar ajuste'}</Boton>
+            </div>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 };

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-11-2026 a las 19:15:57
+-- Tiempo de generación: 26-11-2026 a las 20:21:18
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -239,16 +239,18 @@ CREATE TABLE `inventario` (
 
 INSERT INTO `inventario` (`id`, `producto_id`, `ubicacion_id`, `cantidad`, `lote`, `fecha_vencimiento`, `updated_at`) VALUES
 (546, 453, 3, 0, NULL, NULL, '2026-11-26 17:58:38'),
-(547, 453, 13, 0, NULL, NULL, '2026-11-26 18:07:59'),
+(547, 453, 13, 0, NULL, NULL, '2026-11-26 18:55:51'),
 (548, 453, 2, 0, NULL, NULL, '2026-11-26 18:07:00'),
 (549, 453, 4, 0, NULL, NULL, '2026-11-26 18:07:12'),
 (550, 453, 6, 0, NULL, NULL, '2026-11-26 18:07:42'),
 (551, 453, 1, 0, NULL, NULL, '2026-11-26 18:08:08'),
-(552, 453, 5, 10, NULL, NULL, '2026-11-26 18:08:08'),
-(553, 454, 5, 10, NULL, NULL, '2026-11-26 18:08:39'),
-(554, 455, 5, 55, NULL, NULL, '2026-11-26 18:09:18'),
-(555, 456, 2, 0, NULL, NULL, '2026-11-26 18:10:17'),
-(556, 456, 13, 11, NULL, NULL, '2026-11-26 18:10:17');
+(552, 453, 5, 610, NULL, NULL, '2026-11-26 19:09:03'),
+(553, 454, 5, 0, NULL, NULL, '2026-11-26 18:23:43'),
+(555, 456, 2, 11, NULL, NULL, '2026-11-26 18:23:56'),
+(556, 456, 13, 0, NULL, NULL, '2026-11-26 18:23:56'),
+(557, 454, 2, 0, NULL, NULL, '2026-11-26 19:14:12'),
+(558, 454, 13, 1224, NULL, NULL, '2026-11-26 19:19:05'),
+(559, 454, 1, 0, NULL, NULL, '2026-11-26 19:19:05');
 
 --
 -- Disparadores `inventario`
@@ -371,6 +373,7 @@ CREATE TABLE `movimientos_inventario` (
   `costo_unitario` decimal(12,2) DEFAULT NULL,
   `referencia` varchar(100) DEFAULT NULL,
   `motivo` varchar(255) DEFAULT NULL,
+  `concepto` varchar(50) DEFAULT NULL,
   `usuario_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -379,11 +382,18 @@ CREATE TABLE `movimientos_inventario` (
 -- Volcado de datos para la tabla `movimientos_inventario`
 --
 
-INSERT INTO `movimientos_inventario` (`id`, `tipo`, `producto_id`, `almacen_origen_id`, `almacen_destino_id`, `ubicacion_origen_id`, `ubicacion_destino_id`, `cantidad`, `costo_unitario`, `referencia`, `motivo`, `usuario_id`, `created_at`) VALUES
-(569, 'entrada', 453, NULL, 1, NULL, 3, 10, 10.00, 'Stock inicial', 'Registro de producto', NULL, '2026-11-26 17:57:19'),
-(570, 'entrada', 454, NULL, 1, NULL, 5, 10, 10.00, 'Stock inicial', 'Registro de producto', NULL, '2026-11-26 18:08:39'),
-(571, 'entrada', 455, NULL, 1, NULL, 5, 55, 10.00, 'Stock inicial', 'Registro de producto', NULL, '2026-11-26 18:09:18'),
-(572, 'entrada', 456, NULL, 1, NULL, 2, 11, 10.00, 'Stock inicial', 'Registro de producto', NULL, '2026-11-26 18:09:55');
+INSERT INTO `movimientos_inventario` (`id`, `tipo`, `producto_id`, `almacen_origen_id`, `almacen_destino_id`, `ubicacion_origen_id`, `ubicacion_destino_id`, `cantidad`, `costo_unitario`, `referencia`, `motivo`, `concepto`, `usuario_id`, `created_at`) VALUES
+(569, 'entrada', 453, NULL, 1, NULL, 3, 10, 10.00, 'Stock inicial', 'Registro de producto', NULL, NULL, '2026-11-26 17:57:19'),
+(570, 'entrada', 454, NULL, 1, NULL, 5, 10, 10.00, 'Stock inicial', 'Registro de producto', NULL, NULL, '2026-11-26 18:08:39'),
+(572, 'entrada', 456, NULL, 1, NULL, 2, 11, 10.00, 'Stock inicial', 'Registro de producto', NULL, NULL, '2026-11-26 18:09:55'),
+(573, 'entrada', 453, NULL, 1, NULL, 5, 99, 10.00, 'Ajuste manual', 'Se gartega proque me da la gana', 'compra', NULL, '2026-11-26 18:50:02'),
+(575, 'entrada', 453, NULL, 6, NULL, 13, 500, NULL, 'Ajuste manual', 'aumente 6500 y lo cambie de almacen', 'compra', NULL, '2026-11-26 18:55:40'),
+(577, 'entrada', 453, NULL, 1, NULL, 5, 1, NULL, 'Ajuste manual', 'uno', 'compra', NULL, '2026-11-26 19:09:03'),
+(578, 'entrada', 454, NULL, 6, NULL, 13, 1111, NULL, 'Ajuste manual', 'GANITAS', 'compra', NULL, '2026-11-26 19:12:37'),
+(579, 'entrada', 454, NULL, 6, NULL, 13, 1, NULL, 'Ajuste manual', 'compra', 'compra', NULL, '2026-11-26 19:13:18'),
+(580, 'entrada', 454, NULL, 6, NULL, 13, 1, NULL, 'Ajuste manual', 'compra', 'compra', NULL, '2026-11-26 19:14:08'),
+(581, 'entrada', 454, NULL, 1, NULL, 1, 1, NULL, 'Ajuste manual', 'compra', 'compra', NULL, '2026-11-26 19:14:25'),
+(582, 'entrada', 454, NULL, 1, NULL, 1, 100, NULL, 'Ajuste manual', 'compra', 'compra', NULL, '2026-11-26 19:17:13');
 
 -- --------------------------------------------------------
 
@@ -500,6 +510,8 @@ CREATE TABLE `productos` (
   `preciofull` decimal(12,2) NOT NULL,
   `stock` int(11) NOT NULL DEFAULT 0,
   `stock_inicial` int(11) NOT NULL DEFAULT 0,
+  `stock_minimo` int(11) NOT NULL DEFAULT 0,
+  `stock_maximo` int(11) DEFAULT NULL,
   `unidad_medida` varchar(20) NOT NULL DEFAULT 'UND',
   `imagen` varchar(150) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -510,12 +522,11 @@ CREATE TABLE `productos` (
 -- Volcado de datos para la tabla `productos`
 --
 
-INSERT INTO `productos` (`id`, `producto_base_id`, `es_base`, `idestatus`, `idcategoria`, `idsubcategoria`, `idmarca`, `idmodelo`, `idcolor`, `idtalla`, `idunidad`, `nombre`, `descripcion`, `sku_base`, `codigo_producto`, `codigo_detalle`, `codigo_barras`, `tipo`, `estrellas`, `costo`, `precio`, `preciofull`, `stock`, `stock_inicial`, `unidad_medida`, `imagen`, `created_at`, `updated_at`) VALUES
-(447, NULL, 1, 1, 9, 36, 1, 2, 1, 1, 1, 'BODY', 'BODY MODELO 1', 'P-00447XX', 'P-00447XX', NULL, NULL, NULL, '5', 0.00, 0.00, 0.00, 0, 0, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 14:59:10', '2026-11-26 15:22:29'),
-(453, 447, 0, 1, 9, 36, 1, 2, 10, 3, 1, 'BODY', 'BODY MODELO 1', 'P-00453', 'P-00447XX', 'P-00447XX-D453', NULL, NULL, '5', 10.00, 20.00, 15.00, 10, 0, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 17:57:19', '2026-11-26 18:08:08'),
-(454, 447, 0, 1, 9, 36, 1, 2, 7, 3, 1, 'BODY', 'BODY MODELO 1', 'P-00454', 'P-00447XX', 'P-00447XX-D454', NULL, NULL, '5', 10.00, 20.00, 15.00, 10, 10, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 18:08:39', '2026-11-26 18:08:39'),
-(455, 447, 0, 1, 9, 36, 1, 2, 10, 5, 1, 'BODY', 'BODY MODELO 1', 'P-00455', 'P-00447XX', 'P-00447XX-D455', NULL, NULL, '5', 10.00, 20.00, 15.00, 55, 55, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 18:09:18', '2026-11-26 18:09:18'),
-(456, 447, 0, 1, 9, 36, 1, 2, 10, 5, 1, 'BODY', 'BODY MODELO 1', 'P-00456', 'P-00447XX', 'P-00447XX-D456', NULL, NULL, '5', 10.00, 20.00, 15.00, 11, 11, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 18:09:55', '2026-11-26 18:10:17');
+INSERT INTO `productos` (`id`, `producto_base_id`, `es_base`, `idestatus`, `idcategoria`, `idsubcategoria`, `idmarca`, `idmodelo`, `idcolor`, `idtalla`, `idunidad`, `nombre`, `descripcion`, `sku_base`, `codigo_producto`, `codigo_detalle`, `codigo_barras`, `tipo`, `estrellas`, `costo`, `precio`, `preciofull`, `stock`, `stock_inicial`, `stock_minimo`, `stock_maximo`, `unidad_medida`, `imagen`, `created_at`, `updated_at`) VALUES
+(447, NULL, 1, 1, 9, 36, 1, 2, 1, 1, 1, 'BODY', 'BODY MODELO 1', 'P-00447XX', 'P-00447XX', NULL, NULL, NULL, '5', 0.00, 0.00, 0.00, 0, 0, 10, 100, 'UND', 'prod_447_9b37ab7e.jpg', '2026-11-26 14:59:10', '2026-11-26 19:10:33'),
+(453, 447, 0, 1, 9, 36, 1, 2, 10, 3, 1, 'BODY', 'BODY MODELO 1', 'P-00453', 'P-00447XX', 'P-00447XX-D453', NULL, NULL, '5', 10.00, 20.00, 15.00, 610, 0, 10, 100, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 17:57:19', '2026-11-26 19:09:03'),
+(454, 447, 0, 1, 9, 36, 1, 2, 10, 3, 1, 'BODY', 'BODY MODELO 1', 'P-00454', 'P-00447XX', 'P-00447XX-D454', NULL, NULL, '5', 10.00, 20.00, 15.00, 1224, 10, 10, 100, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 18:08:39', '2026-11-26 19:19:05'),
+(456, 447, 0, 1, 9, 36, 1, 2, 10, 5, 1, 'BODY', 'BODY MODELO 1', 'P-00456', 'P-00447XX', 'P-00447XX-D456', NULL, NULL, '5', 10.00, 20.00, 15.00, 11, 11, 10, 100, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 18:09:55', '2026-11-26 18:50:45');
 
 -- --------------------------------------------------------
 
@@ -542,9 +553,30 @@ CREATE TABLE `producto_almacen` (
 
 INSERT INTO `producto_almacen` (`id`, `producto_id`, `almacen_id`, `sku_almacen`, `ubicacion_preferida_id`, `stock_minimo`, `stock_maximo`, `idestatus`, `created_at`, `updated_at`) VALUES
 (549, 453, 1, 'ALM01-P-00453', 1, 0, NULL, 1, '2026-11-26 18:07:59', '2026-11-26 18:07:59'),
-(550, 454, 1, 'ALM01-P-00454', 1, 0, NULL, 1, '2026-11-26 18:08:39', '2026-11-26 18:08:39'),
-(551, 455, 1, 'ALM01-P-00455', 1, 0, NULL, 1, '2026-11-26 18:09:18', '2026-11-26 18:09:18'),
-(553, 456, 6, 'ALM02-P-00456', 13, 0, NULL, 1, '2026-11-26 18:10:17', '2026-11-26 18:10:17');
+(554, 456, 1, 'ALM01-P-00456', 1, 0, NULL, 1, '2026-11-26 18:23:56', '2026-11-26 18:23:56'),
+(559, 454, 6, 'ALM02-P-00454', 13, 0, NULL, 1, '2026-11-26 19:19:05', '2026-11-26 19:19:05');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `producto_imagenes`
+--
+
+CREATE TABLE `producto_imagenes` (
+  `id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `imagen` varchar(150) NOT NULL,
+  `orden` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `producto_imagenes`
+--
+
+INSERT INTO `producto_imagenes` (`id`, `producto_id`, `imagen`, `orden`, `created_at`) VALUES
+(10, 447, 'prod_447_9b37ab7e.jpg', 0, '2026-11-26 19:10:07'),
+(11, 447, 'prod_447_86783c87.jpg', 1, '2026-11-26 19:10:07');
 
 -- --------------------------------------------------------
 
@@ -777,7 +809,8 @@ INSERT INTO `tasas_cambio` (`id`, `moneda`, `moneda_base`, `tasa`, `fuente`, `vi
 (30, 'VES', 'USD', 924.35, 'bcv', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55'),
 (31, 'VES', 'EUR', 1011.73, 'bcv', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55'),
 (32, 'VES', 'USDT', 1093.98, 'usdt', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55'),
-(33, 'VES', 'AJU', 1011.73, 'ajustada', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55');
+(33, 'VES', 'AJU', 1011.73, 'ajustada', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55'),
+(34, 'VES', 'AJU', 1000.00, 'ajustada', '2026-11-26 18:59:00', '2026-11-26 18:59:34', '2026-11-26 18:59:34');
 
 -- --------------------------------------------------------
 
@@ -895,7 +928,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `is_active`, `is_staff`, `is_superuser`, `last_login`, `created_at`, `updated_at`) VALUES
-(1, 'Wilmer Vargas', 'wilmere.vargas@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$WlNoV3kyUGVqZUJJUklCVg$3YBsArJK1BF3jprph0L2qcXEBy5FHFhmjyOr8pDDlAM', 1, 1, 1, '2026-11-26 12:06:30', '2026-11-23 10:42:59', '2026-11-26 12:06:30');
+(1, 'Wilmer Vargas', 'wilmere.vargas@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$WlNoV3kyUGVqZUJJUklCVg$3YBsArJK1BF3jprph0L2qcXEBy5FHFhmjyOr8pDDlAM', 1, 1, 1, '2026-11-26 14:18:58', '2026-11-23 10:42:59', '2026-11-26 14:18:58');
 
 -- --------------------------------------------------------
 
@@ -1194,6 +1227,13 @@ ALTER TABLE `producto_almacen`
   ADD KEY `idx_pa_estatus` (`idestatus`);
 
 --
+-- Indices de la tabla `producto_imagenes`
+--
+ALTER TABLE `producto_imagenes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_pi_producto` (`producto_id`,`orden`);
+
+--
 -- Indices de la tabla `roles`
 --
 ALTER TABLE `roles`
@@ -1339,7 +1379,7 @@ ALTER TABLE `estatus`
 -- AUTO_INCREMENT de la tabla `inventario`
 --
 ALTER TABLE `inventario`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=557;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=560;
 
 --
 -- AUTO_INCREMENT de la tabla `items_carrito`
@@ -1369,7 +1409,7 @@ ALTER TABLE `modelos`
 -- AUTO_INCREMENT de la tabla `movimientos_inventario`
 --
 ALTER TABLE `movimientos_inventario`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=573;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=583;
 
 --
 -- AUTO_INCREMENT de la tabla `pedidos`
@@ -1393,7 +1433,13 @@ ALTER TABLE `productos`
 -- AUTO_INCREMENT de la tabla `producto_almacen`
 --
 ALTER TABLE `producto_almacen`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=554;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=560;
+
+--
+-- AUTO_INCREMENT de la tabla `producto_imagenes`
+--
+ALTER TABLE `producto_imagenes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `roles`
@@ -1417,7 +1463,7 @@ ALTER TABLE `tallas`
 -- AUTO_INCREMENT de la tabla `tasas_cambio`
 --
 ALTER TABLE `tasas_cambio`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT de la tabla `tipos_ubicacion`
@@ -1538,6 +1584,12 @@ ALTER TABLE `producto_almacen`
   ADD CONSTRAINT `fk_pa_estatus` FOREIGN KEY (`idestatus`) REFERENCES `estatus` (`id`),
   ADD CONSTRAINT `fk_pa_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_pa_ubicacion` FOREIGN KEY (`ubicacion_preferida_id`) REFERENCES `ubicaciones` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `producto_imagenes`
+--
+ALTER TABLE `producto_imagenes`
+  ADD CONSTRAINT `fk_pi_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `role_permissions`

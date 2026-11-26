@@ -79,4 +79,13 @@ export const api = {
       body: form,
     });
   },
+
+  subirImagenes: async (recurso, id, archivos = []) => {
+    const form = new FormData();
+    archivos.forEach((a) => form.append('imagenes[]', a));
+    return pedir(`${API_BASE}${recurso}/${id}/imagenes`, {
+      method: 'POST',
+      body: form,
+    });
+  },
 };

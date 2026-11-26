@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS `movimientos_inventario` (
   `costo_unitario` decimal(12,2) DEFAULT NULL,
   `referencia` varchar(100) DEFAULT NULL,
   `motivo` varchar(255) DEFAULT NULL,
+  `concepto` varchar(50) DEFAULT NULL,
   `usuario_id` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
@@ -280,6 +281,21 @@ CREATE TABLE IF NOT EXISTS `producto_almacen` (
   CONSTRAINT `fk_pa_ubicacion` FOREIGN KEY (`ubicacion_preferida_id`) REFERENCES `ubicaciones` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=542 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+
+-- --------------------------------------------------------
+-- Tabla: producto_imagenes
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS \producto_imagenes\ (
+  \id\ int(11) NOT NULL AUTO_INCREMENT,
+  \producto_id\ int(11) NOT NULL,
+  \imagen\ varchar(150) NOT NULL,
+  \orden\ int(11) NOT NULL DEFAULT 0,
+  \created_at\ timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (\id\),
+  KEY \idx_pi_producto\ (\producto_id\,\orden\),
+  CONSTRAINT \k_pi_producto\ FOREIGN KEY (\producto_id\) REFERENCES \productos\ (\id\) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- --------------------------------------------------------
 -- Tabla: productos
 -- --------------------------------------------------------
@@ -308,6 +324,8 @@ CREATE TABLE IF NOT EXISTS `productos` (
   `preciofull` decimal(12,2) NOT NULL,
   `stock` int(11) NOT NULL DEFAULT 0,
   `stock_inicial` int(11) NOT NULL DEFAULT 0,
+  `stock_minimo` int(11) NOT NULL DEFAULT 0,
+  `stock_maximo` int(11) DEFAULT NULL,
   `unidad_medida` varchar(20) NOT NULL DEFAULT 'UND',
   `imagen` varchar(150) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),

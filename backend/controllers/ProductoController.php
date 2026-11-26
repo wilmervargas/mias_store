@@ -209,6 +209,89 @@ class ProductoController
         }
     }
 
+    /** GET /?url=productos/{id}/imagenes */
+    public function listarImagenes(int $id): void
+    {
+        try {
+            $prod = Producto::obtenerPorId($id);
+            if (!$prod) {
+                responder(false, "Producto con ID #{$id} no encontrado", 404);
+            }
+            $imgs = Producto::imagenes($id);
+            if (empty($imgs)) {
+                $principal = (string) ($prod['imagen'] ?? '');
+                if ($principal !== '' && $principal !== 'sin-foto.png') {
+                    Producto::agregarImagen($id, $principal, 0);
+                    $imgs = Producto::imagenes($id);
+                }
+            }
+            responder(true, $imgs, 200);
+        } catch (Throwable $e) {
+            responder(false, $e->getMessage(), 500);
+        }
+    }
+
+    /** POST /?url=productos/{id}/imagenes (multipart, campo imagenes[]) */
+    public function subirImagenes(int $id): void
+    {
+        try {
+            if (!Producto::obtenerPorId($id)) {
+                responder(false, "Producto con ID #{$id} no encontrado", 404);
+            }
+            $existentes = Producto::imagenes($id);
+            $disponibles = max(0, 6 - count($existentes));
+            if ($disponibles === 0) {
+                responder(false, 'El producto ya tiene el máximo de 6 imágenes', 400);
+            }
+
+            $files = [];
+            if (isset($_FILES['imagenes'])) {
+                $f = $_FILES['imagenes'];
+                if (is_array($f['name'])) {
+                    foreach ($f['name'] as $i => $name) {
+                        $files[] = ['name'=>$name,'type'=>$f['type'][$i],'tmp_name'=>$f['tmp_name'][$i],'error'=>$f['error'][$i],'size'=>$f['size'][$i]];
+                    }
+                } else {
+                    $files[] = $f;
+                }
+            } elseif (isset($_FILES['imagen'])) {
+                $files[] = $_FILES['imagen'];
+            }
+            if (!$files) { responder(false, 'No se recibieron imágenes', 400); }
+
+            $permitidos = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            if (!is_dir(__DIR__ . '/../imagenes')) { mkdir(__DIR__ . '/../imagenes', 0777, true); }
+            $guardadas = [];
+            foreach (array_slice($files, 0, $disponibles) as $archivo) {
+                if (($archivo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) continue;
+                $mime = $finfo->file($archivo['tmp_name']);
+                if (!isset($permitidos[$mime])) continue;
+                if (($archivo['size'] ?? 0) > 2 * 1024 * 1024) continue;
+                $nombreUnico = 'prod_' . $id . '_' . bin2hex(random_bytes(4)) . '.' . $permitidos[$mime];
+                $destino = __DIR__ . '/../imagenes/' . $nombreUnico;
+                if (!move_uploaded_file($archivo['tmp_name'], $destino)) continue;
+                $imgId = Producto::agregarImagen($id, $nombreUnico);
+                $guardadas[] = ['id' => $imgId, 'imagen' => $nombreUnico, 'url' => 'http://localhost:8000/imagenes/' . $nombreUnico];
+            }
+            responder(true, ['imagenes' => $guardadas, 'total' => count(Producto::imagenes($id))], 201);
+        } catch (Throwable $e) {
+            responder(false, $e->getMessage(), 500);
+        }
+    }
+
+    /** DELETE /?url=productos/imagenes/{imagenId} */
+    public function eliminarImagenProducto(int $imagenId): void
+    {
+        try {
+            $ok = Producto::eliminarImagen($imagenId);
+            if (!$ok) { responder(false, 'Imagen no encontrada', 404); }
+            responder(true, ['mensaje' => 'Imagen eliminada'], 200);
+        } catch (Throwable $e) {
+            responder(false, $e->getMessage(), 500);
+        }
+    }
+
     /** PUT /?url=productos/{id}/presentacion -> actualiza un SKU y su stock en un almacen. */
     public function actualizarPresentacion(int $id): void
     {

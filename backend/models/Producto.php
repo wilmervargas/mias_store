@@ -11,7 +11,7 @@ class Producto
     {
         return "SELECT
                     p.id, p.producto_base_id, p.es_base, p.nombre, p.descripcion,
-                    p.precio, p.preciofull, p.costo, p.stock, p.stock_inicial, p.imagen,
+                    p.precio, p.preciofull, p.costo, p.stock, p.stock_inicial, p.stock_minimo, p.stock_maximo, p.imagen,
                     p.estrellas, p.idestatus, p.idcategoria, p.idsubcategoria,
                     p.idmarca, p.idmodelo, p.idcolor, p.idtalla, p.idunidad,
                     p.sku_base, p.codigo_producto, p.codigo_detalle, p.codigo_barras, p.unidad_medida,
@@ -126,6 +126,8 @@ class Producto
             'precio' => (float) ($p['precio'] ?? 0),
             'preciofull' => (float) ($p['preciofull'] ?? 0),
             'stock_inicial' => (int) ($p['stock_inicial'] ?? 0),
+            'stock_minimo' => (int) ($p['stock_minimo'] ?? 0),
+            'stock_maximo' => $p['stock_maximo'] !== null && $p['stock_maximo'] !== '' ? (int) $p['stock_maximo'] : null,
             'stock' => (int) ($p['stock'] ?? 0),
             'sku_base' => $p['sku_base'] ?? '',
             'sku_almacen' => $p['sku_almacen'] ?? '',
@@ -439,13 +441,15 @@ class Producto
         $codigoDetalle = trim((string) ($datos['codigo_detalle'] ?? ''));
 
         $stockInicial = max(0, (int) ($datos['stock_inicial'] ?? 0));
+        $stockMinimo = max(0, (int) ($datos['stock_minimo'] ?? 0));
+        $stockMaximo = ($datos['stock_maximo'] ?? '') === '' || $datos['stock_maximo'] === null ? null : max(0, (int) $datos['stock_maximo']);
         $sql = "INSERT INTO productos
                 (producto_base_id, es_base, nombre, descripcion, precio, preciofull, costo,
-                 stock, stock_inicial, idcategoria, idsubcategoria, idmarca, idmodelo, idcolor, idtalla, idunidad,
+                 stock, stock_inicial, stock_minimo, stock_maximo, idcategoria, idsubcategoria, idmarca, idmodelo, idcolor, idtalla, idunidad,
                  sku_base, codigo_producto, codigo_detalle, codigo_barras, unidad_medida, estrellas, imagen, idestatus)
                 VALUES
                 (:producto_base_id, :es_base, :nombre, :descripcion, :precio, :preciofull, :costo,
-                 0, :stock_inicial, :idcategoria, :idsubcategoria, :idmarca, :idmodelo, :idcolor, :idtalla, :idunidad,
+                 0, :stock_inicial, :stock_minimo, :stock_maximo, :idcategoria, :idsubcategoria, :idmarca, :idmodelo, :idcolor, :idtalla, :idunidad,
                  :sku_base, :codigo_producto, :codigo_detalle, :codigo_barras, :unidad_medida, :estrellas, :imagen, :idestatus)";
         $stmt = $db->prepare($sql);
         $stmt->execute([
@@ -457,6 +461,8 @@ class Producto
             ':preciofull'       => (float) ($datos['preciofull'] ?? ($precio > 0 ? $precio : 0)),
             ':costo'            => (float) ($datos['costo'] ?? 0),
             ':stock_inicial'    => $stockInicial,
+            ':stock_minimo'     => $stockMinimo,
+            ':stock_maximo'     => $stockMaximo,
             ':idcategoria'      => (int) ($datos['idcategoria'] ?? 1),
             ':idsubcategoria'   => (int) ($datos['idsubcategoria'] ?? 1),
             ':idmarca'          => (int) ($datos['idmarca'] ?? 1),
@@ -501,6 +507,8 @@ class Producto
         $codigoProducto = trim((string) ($datos['codigo_producto'] ?? $datos['sku_base'] ?? ''));
         $codigoDetalle = trim((string) ($datos['codigo_detalle'] ?? ''));
         if ($esBase) $codigoDetalle = '';
+        $stockMinimo = max(0, (int) ($datos['stock_minimo'] ?? 0));
+        $stockMaximo = ($datos['stock_maximo'] ?? '') === '' || $datos['stock_maximo'] === null ? null : max(0, (int) $datos['stock_maximo']);
 
         $sql = "UPDATE productos SET
                     producto_base_id = :producto_base_id,
@@ -510,6 +518,8 @@ class Producto
                     precio           = :precio,
                     preciofull       = :preciofull,
                     costo            = :costo,
+                    stock_minimo     = :stock_minimo,
+                    stock_maximo     = :stock_maximo,
                     idcategoria      = :idcategoria,
                     idsubcategoria   = :idsubcategoria,
                     idmarca          = :idmarca,
@@ -536,6 +546,8 @@ class Producto
             ':precio'           => $precio,
             ':preciofull'       => (float) ($datos['preciofull'] ?? ($precio > 0 ? $precio : 0)),
             ':costo'            => (float) ($datos['costo'] ?? 0),
+            ':stock_minimo'     => $stockMinimo,
+            ':stock_maximo'     => $stockMaximo,
             ':idcategoria'      => (int) ($datos['idcategoria'] ?? 1),
             ':idsubcategoria'   => (int) ($datos['idsubcategoria'] ?? 1),
             ':idmarca'          => (int) ($datos['idmarca'] ?? 1),
@@ -1238,6 +1250,58 @@ class Producto
         $db   = Database::conectar();
         $stmt = $db->prepare("UPDATE productos SET imagen = :imagen WHERE id = :id");
         return $stmt->execute([':imagen' => $imagen, ':id' => $id]);
+    }
+
+    public static function imagenes(int $productoId): array
+    {
+        $db = Database::conectar();
+        $stmt = $db->prepare("SELECT id, producto_id, imagen, orden, created_at FROM producto_imagenes WHERE producto_id = :p ORDER BY orden ASC, id ASC");
+        $stmt->execute([':p' => $productoId]);
+        return $stmt->fetchAll();
+    }
+
+    public static function agregarImagen(int $productoId, string $imagen, ?int $orden = null): int
+    {
+        $db = Database::conectar();
+        if ($orden === null) {
+            $s = $db->prepare("SELECT COALESCE(MAX(orden), -1) + 1 FROM producto_imagenes WHERE producto_id = :p");
+            $s->execute([':p' => $productoId]);
+            $orden = (int) $s->fetchColumn();
+        }
+        $stmt = $db->prepare("INSERT INTO producto_imagenes (producto_id, imagen, orden) VALUES (:p, :img, :o)");
+        $stmt->execute([':p' => $productoId, ':img' => $imagen, ':o' => $orden]);
+        $id = (int) $db->lastInsertId();
+        // si el producto no tiene imagen principal, asignarla
+        $p = $db->prepare("SELECT imagen FROM productos WHERE id = :id LIMIT 1");
+        $p->execute([':id' => $productoId]);
+        $actual = (string) $p->fetchColumn();
+        if ($actual === '' || $actual === 'sin-foto.png') {
+            self::setImagen($productoId, $imagen);
+        }
+        return $id;
+    }
+
+    public static function eliminarImagen(int $imagenId): bool
+    {
+        $db = Database::conectar();
+        $stmt = $db->prepare("SELECT producto_id, imagen FROM producto_imagenes WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $imagenId]);
+        $row = $stmt->fetch();
+        if (!$row) return false;
+        $productoId = (int) $row['producto_id'];
+        $img = (string) $row['imagen'];
+        $db->prepare("DELETE FROM producto_imagenes WHERE id = :id")->execute([':id' => $imagenId]);
+        // si era la principal, asignar la siguiente
+        $p = $db->prepare("SELECT imagen FROM productos WHERE id = :id LIMIT 1");
+        $p->execute([':id' => $productoId]);
+        $actual = (string) $p->fetchColumn();
+        if ($actual === $img) {
+            $next = $db->prepare("SELECT imagen FROM producto_imagenes WHERE producto_id = :p ORDER BY orden ASC, id ASC LIMIT 1");
+            $next->execute([':p' => $productoId]);
+            $nueva = $next->fetchColumn();
+            self::setImagen($productoId, $nueva ? (string) $nueva : 'sin-foto.png');
+        }
+        return true;
     }
 
     public static function resumenInventario(): array
