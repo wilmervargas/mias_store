@@ -381,7 +381,7 @@ const CrudProductos = () => {
       </BarraFiltros>
 
       <Tabla
-        colSpan={11}
+        colSpan={10}
         cargando={cargando}
         vacio={productos.length === 0}
         textoVacio="No hay productos para los filtros seleccionados."
@@ -393,10 +393,9 @@ const CrudProductos = () => {
             <Th>Producto / Descripción</Th>
             <Th>Categoría / Marca</Th>
             <Th align="right">Stock total</Th>
-            <Th align="right">Precio</Th>
+            <Th align="right">Precio / Costo</Th>
             <Th className="border-l-2 border-purple-200 dark:border-purple-500/30">Almacén</Th>
             <Th>Color / Talla</Th>
-            <Th align="right">Precio / Costo</Th>
             <Th align="right">Stock almacén</Th>
             <Th align="right">Acciones</Th>
           </>
@@ -409,9 +408,14 @@ const CrudProductos = () => {
           const totalFilas = Number(producto.total_filas ?? 0);
           const precioMin = producto.precio_min ?? producto.precio;
           const precioMax = producto.precio_max ?? producto.precio;
+          const costoMin = producto.costo_min ?? producto.costo;
+          const costoMax = producto.costo_max ?? producto.costo;
           const rangoPrecio = precioMin === precioMax || precioMax == null
             ? `$ ${Number(precioMin || 0).toFixed(2)}`
             : `$ ${Number(precioMin || 0).toFixed(2)} - $ ${Number(precioMax || 0).toFixed(2)}`;
+          const rangoCosto = costoMin === costoMax || costoMax == null
+            ? `$ ${Number(costoMin || 0).toFixed(2)}`
+            : `$ ${Number(costoMin || 0).toFixed(2)} - $ ${Number(costoMax || 0).toFixed(2)}`;
           const filasDetalle = detalles[producto.id] || [];
 
           // Cada fila de almacén representa una presentación/SKU dentro de un almacén.
@@ -472,20 +476,68 @@ const CrudProductos = () => {
                   <span className={`font-bold ${stockTotal < 10 ? 'text-rose-400' : 'text-gray-900 dark:text-white'}`}>{stockTotal}</span>
                   <span className="ml-1 text-[10px] text-gray-500">{producto.unidad_abreviatura || producto.unidad_medida || ''}</span>
                 </Td>
-                <Td align="right" className="whitespace-nowrap font-mono text-[11px] text-gray-900 dark:text-gray-100">{rangoPrecio}</Td>
-                <td colSpan={4} className="border-l-2 border-purple-200 bg-purple-50/40 px-3.5 py-3 dark:border-purple-500/30 dark:bg-purple-500/5">
-                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-gray-500 dark:text-gray-400">
-                    <span className="font-bold text-purple-700 dark:text-purple-300">
-                      {almacenesCodigo.length} almacén(es)
-                    </span>
-                    {almacenesCodigo.map((codigo) => (
-                      <span key={codigo} className="rounded-md bg-cyan-100 px-1.5 py-0.5 font-mono font-bold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
-                        {codigo}
-                      </span>
-                    ))}
-                    <span>· {presentaciones.length} presentación(es)</span>
-                  </div>
-                </td>
+                <Td align="right" className="whitespace-nowrap font-mono text-[11px]">
+                  <span className="block text-gray-900 dark:text-gray-100">{rangoPrecio}</span>
+                  <span className="block text-[10px] text-gray-500">Costo {rangoCosto}</span>
+                </Td>
+                <Td className="border-l-2 border-purple-200 text-[11px] align-top dark:border-purple-500/30">
+                  {presentaciones.length === 0 ? (
+                    <span className="text-gray-500">-</span>
+                  ) : (
+                    <div className="space-y-2">
+                      {presentaciones.map(({ fila, almacen }, idx) => (
+                        <div key={`${producto.id}-${fila.id}-${almacen?.almacen_id || 'sin'}-alm-${idx}`} className={`min-h-[52px] flex flex-col justify-center ${idx > 0 ? 'pt-2 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                          {almacen ? (
+                            <span className="inline-flex flex-wrap items-center gap-1.5">
+                              <span className="rounded-md bg-cyan-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
+                                {almacen.codigo}
+                              </span>
+                              <span className="text-gray-500 dark:text-gray-400">{almacen.almacen}</span>
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">Sin almacen</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Td>
+                <Td className="text-[11px] align-top">
+                  {presentaciones.length === 0 ? (
+                    <span className="text-gray-500">-</span>
+                  ) : (
+                    <div className="space-y-2">
+                      {presentaciones.map(({ fila, almacen }, idx) => (
+                        <div key={`${producto.id}-${fila.id}-${almacen?.almacen_id || 'sin'}-ct-${idx}`} className={`min-h-[52px] flex flex-wrap items-center content-center gap-1.5 ${idx > 0 ? 'pt-2 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="w-4 h-4 rounded-full border border-gray-300 shadow-sm dark:border-gray-600" style={{ background: fila.color_hex || '#d1d5db' }} />
+                            <span className="text-gray-600 dark:text-gray-300">{fila.color || '-'}</span>
+                          </span>
+                          <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                            Talla {fila.talla || '-'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Td>
+                <Td align="right" className="align-top">
+                  {presentaciones.length === 0 ? (
+                    <span className="text-gray-500">-</span>
+                  ) : (
+                    <div className="space-y-2">
+                      {presentaciones.map(({ fila, almacen }, idx) => {
+                        const stockFila = Number(almacen?.stock ?? fila.stock ?? 0);
+                        return (
+                          <div key={`${producto.id}-${fila.id}-${almacen?.almacen_id || 'sin'}-st-${idx}`} className={`min-h-[52px] flex flex-col justify-center ${idx > 0 ? 'pt-2 border-t border-gray-200 dark:border-gray-800' : ''}`}>
+                            <span className={`font-bold ${stockFila <= 0 ? 'text-rose-500' : 'text-gray-900 dark:text-white'}`}>{stockFila}</span>
+                            <span className="ml-1 text-[10px] text-gray-500">{producto.unidad_abreviatura || producto.unidad_medida || ''}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Td>
                 <Td align="right">
                   <Acciones>
                     <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(producto)}>
@@ -513,108 +565,6 @@ const CrudProductos = () => {
                   </Acciones>
                 </Td>
               </tr>
-
-              {presentaciones.map(({ fila, almacen }, idx) => {
-                const activoFila = Number(fila.idestatus) === 1;
-                const stockFila = Number(almacen?.stock ?? fila.stock ?? 0);
-                const stockTotalFila = Number(fila.stock ?? 0);
-                const motivoNoEliminarFila = !almacen
-                  ? 'Esta presentación no tiene almacén asignado. Edita el producto para asignarlo.'
-                  : stockTotalFila > 0
-                    ? 'Tiene stock en inventario. Ajusta el stock a cero antes de eliminar.'
-                    : undefined;
-
-                return (
-                  <tr
-                    key={`${producto.id}-${fila.id}-${almacen?.almacen_id || 'sin'}-${idx}`}
-                    className="bg-gray-50/70 transition-colors hover:bg-gray-100/70 dark:bg-gray-900/30 dark:hover:bg-gray-800/40"
-                  >
-                    <td colSpan={6} className="px-3 py-2.5 text-[10px] text-gray-400">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-purple-400">↳</span>
-                        <span className="font-semibold text-gray-500 dark:text-gray-400">Presentación #{fila.id}</span>
-                        <span className="font-mono text-cyan-500 dark:text-cyan-400">{almacen?.sku_almacen || fila.sku_base || '—'}</span>
-                        <BadgeEstado activo={activoFila} />
-                      </div>
-                    </td>
-                    <Td className="border-l-2 border-purple-200 text-[11px] dark:border-purple-500/30">
-                      {almacen ? (
-                        <span className="inline-flex flex-wrap items-center gap-1.5">
-                          <span className="rounded-md bg-cyan-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
-                            {almacen.codigo}
-                          </span>
-                          <span className="text-gray-500 dark:text-gray-400">{almacen.almacen}</span>
-                        </span>
-                      ) : (
-                        <span className="text-gray-500">Sin almacén</span>
-                      )}
-                    </Td>
-                    <Td className="text-[11px]">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1.5">
-                          <span
-                            className="w-4 h-4 rounded-full border border-gray-300 shadow-sm dark:border-gray-600"
-                            style={{ background: fila.color_hex || '#d1d5db' }}
-                          />
-                          <span className="text-gray-600 dark:text-gray-300">{fila.color || '—'}</span>
-                        </span>
-                        <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                          Talla {fila.talla || '—'}
-                        </span>
-                      </div>
-                    </Td>
-                    <Td align="right" className="whitespace-nowrap font-mono text-[11px]">
-                      <span className="block text-gray-900 dark:text-white">$ {Number(fila.precio || 0).toFixed(2)}</span>
-                      <span className="block text-[10px] text-gray-500">Costo $ {Number(fila.costo || 0).toFixed(2)}</span>
-                    </Td>
-                    <Td align="right">
-                      <span className={`font-bold ${stockFila <= 0 ? 'text-rose-500' : 'text-gray-900 dark:text-white'}`}>{stockFila}</span>
-                      <span className="ml-1 text-[10px] text-gray-500">{producto.unidad_abreviatura || producto.unidad_medida || ''}</span>
-                    </Td>
-                    <Td align="right">
-                      <Acciones>
-                        <Boton
-                          tamano="sm"
-                          variante="neutral"
-                          icono="editar"
-                          disabled={!almacen}
-                          title={!almacen ? 'Asigna un almacén desde Editar producto.' : undefined}
-                          onClick={() => abrirEditarPresentacion(producto, fila, almacen)}
-                        >
-                          Editar
-                        </Boton>
-                        {activoFila ? (
-                          <Boton tamano="sm" variante="advertencia" icono="poder" onClick={() => cambiarEstadoPresentacion(producto, fila, false)}>
-                            Desactivar
-                          </Boton>
-                        ) : (
-                          <Boton tamano="sm" variante="exito" icono="refrescar" onClick={() => cambiarEstadoPresentacion(producto, fila, true)}>
-                            Reactivar
-                          </Boton>
-                        )}
-                        <Boton
-                          tamano="sm"
-                          variante="peligro"
-                          icono="papelera"
-                          disabled={Boolean(motivoNoEliminarFila)}
-                          title={motivoNoEliminarFila}
-                          onClick={() => eliminarPresentacion(producto, fila, almacen)}
-                        >
-                          Eliminar
-                        </Boton>
-                      </Acciones>
-                    </Td>
-                  </tr>
-                );
-              })}
-
-              {filasDetalle.length === 0 && (
-                <tr>
-                  <td colSpan={11} className="px-4 py-2.5 text-[11px] text-gray-500">
-                    {cargando ? 'Cargando presentaciones...' : 'Sin presentaciones registradas.'}
-                  </td>
-                </tr>
-              )}
             </Fragment>
           );
         })}

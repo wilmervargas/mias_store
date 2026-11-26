@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../services/api';
+import { useConfirm } from '../ui/ConfirmProvider';
 import DropzoneImagen from './DropzoneImagen';
 import Modal from '../ui/Modal';
 import Boton from '../ui/Boton';
@@ -18,6 +19,7 @@ const filaVacia = (defaults = {}) => ({
   costo: '',
   precio: '',
   preciofull: '',
+  stock_inicial: '',
   stock: '',
 });
 
@@ -33,10 +35,12 @@ const normalizarFila = (f = {}, defaults = {}) => ({
   costo: f.costo ?? '',
   precio: f.precio ?? '',
   preciofull: f.preciofull ?? '',
+  stock_inicial: f.stock_inicial ?? (f.id ? '' : (f.stock ?? '')),
   stock: f.stock ?? '',
 });
 
 const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
+  const confirmar = useConfirm();
   const editando = Boolean(productoEditar?.id);
   const filasIniciales = useMemo(() => {
     const filas = productoEditar?.filas;
@@ -45,22 +49,29 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
     return [filaVacia()];
   }, [productoEditar, editando]);
 
+  const primeraFila = productoEditar?.filas?.[0] || productoEditar || {};
   const [formData, setFormData] = useState({
     nombre: productoEditar?.nombre || '',
     descripcion: productoEditar?.descripcion || '',
     sku_base: productoEditar?.codigo_producto || productoEditar?.sku_base || '',
     idcategoria: productoEditar?.idcategoria || '',
-    idsubcategoria: productoEditar?.idsubcategoria || 1,
+    idsubcategoria: productoEditar?.idsubcategoria || '',
     idmarca: productoEditar?.idmarca || '',
-    idmodelo: productoEditar?.idmodelo || 1,
+    idmodelo: productoEditar?.idmodelo || '',
     idunidad: productoEditar?.idunidad || 1,
     unidad_medida: productoEditar?.unidad_medida || 'UND',
+    costo: productoEditar?.costo > 0 ? productoEditar.costo : (primeraFila?.costo ?? ''),
+    precio: productoEditar?.precio > 0 ? productoEditar.precio : (primeraFila?.precio ?? ''),
+    preciofull: productoEditar?.preciofull > 0 ? productoEditar.preciofull : (primeraFila?.preciofull ?? ''),
+    stock_inicial: productoEditar?.stock_inicial ?? '',
     imagen: productoEditar?.imagen || 'sin-foto.png',
     idestatus: productoEditar?.idestatus ?? 1,
   });
 
   const [filas, setFilas] = useState(filasIniciales);
+  const [filasEliminadas, setFilasEliminadas] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [subcategorias, setSubcategorias] = useState([]);
   const [marcas, setMarcas] = useState([]);
   const [modelos, setModelos] = useState([]);
   const [colores, setColores] = useState([]);
@@ -73,8 +84,13 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
 
   useEffect(() => {
     api.get('categorias').then((res) => setCategorias(res.datos || []));
+    api.get('subcategorias', 'todos=1').then((res) => setSubcategorias(res.datos || []));
     api.get('marcas').then((res) => setMarcas(res.datos || []));
-    api.get('modelos').then((res) => setModelos(res.datos || []));
+    api.get('modelos').then((res) => {
+      const lista = res.datos || [];
+      setModelos(lista);
+      setFormData((prev) => (prev.idmodelo ? prev : { ...prev, idmodelo: lista[0]?.id ? String(lista[0].id) : '' }));
+    });
     api.get('colores').then((res) => setColores(res.datos || []));
     api.get('tallas').then((res) => setTallas(res.datos || []));
     api.get('unidades').then((res) => setUnidades(res.datos || []));
@@ -117,23 +133,72 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
     ]);
   };
 
-  const quitarFila = (key) => {
+  const quitarFila = async (key) => {
+    const filaActual = filas.find((f) => f._key === key);
+    if (!filaActual) return;
+
+    let vaciarStock = false;
+    if (filaActual.id) {
+      const stock = Number(filaActual.stock || 0);
+      const ok = await confirmar({
+        titulo: stock > 0 ? 'Quitar presentación con existencia' : 'Quitar presentación',
+        mensaje: '¿Deseas quitar esta presentación del producto?',
+        variante: 'peligro',
+        textoConfirmar: stock > 0 ? 'Sí, poner en cero y quitar' : 'Sí, quitar',
+        detalle: [
+          `Presentación/SKU #${filaActual.id}.`,
+          stock > 0
+            ? `Tiene ${stock} unidad(es) en existencia. Si continúas, el sistema pondrá el stock en cero automáticamente antes de eliminarla.`
+            : 'La presentación se eliminará al guardar el producto.',
+          'Esta acción no se puede deshacer.',
+        ],
+        checkLabel: 'Entiendo las consecuencias y deseo continuar.',
+      });
+      if (!ok) return;
+      vaciarStock = stock > 0;
+      setFilasEliminadas((prev) => (
+        prev.some((x) => x.id === filaActual.id) ? prev : [...prev, { id: filaActual.id, vaciarStock }]
+      ));
+    }
+
     setFilas((prev) => (prev.length === 1 ? prev : prev.filter((f) => f._key !== key)));
   };
 
   const unidadSeleccionada = unidades.find((u) => Number(u.id) === Number(formData.idunidad));
   const abreviaturaUnidad = unidadSeleccionada?.abreviatura || formData.unidad_medida || 'UND';
+  const subcategoriasFiltradas = subcategorias.filter((s) => {
+    const mismaCategoria = !formData.idcategoria || Number(s.idcategoria) === Number(formData.idcategoria);
+    const activaOActual = Number(s.idestatus) === 1 || String(s.id) === String(formData.idsubcategoria);
+    return mismaCategoria && activaOActual;
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.idsubcategoria) {
+      alert('Debes seleccionar una subcategoría para el producto.');
+      return;
+    }
     if (filas.length === 0) {
       alert('Debes agregar al menos una fila de almacén/variante.');
       return;
     }
 
     setGuardando(true);
+    const costo = formData.costo === '' ? 0 : Number(formData.costo);
+    const precio = formData.precio === '' ? 0 : Number(formData.precio);
+    const preciofull = formData.preciofull === '' ? precio : Number(formData.preciofull);
+
+    if (precio <= 0) {
+      alert('Debes indicar un precio mayor a 0.');
+      return;
+    }
+
     const payload = {
       ...formData,
+      costo,
+      precio,
+      preciofull,
+      stock_inicial: formData.stock_inicial === '' ? 0 : Number(formData.stock_inicial),
       unidad_medida: abreviaturaUnidad,
       filas: filas.map((f) => ({
         id: f.id || undefined,
@@ -143,9 +208,10 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
         idtalla: Number(f.idtalla || 1),
         codigo_detalle: f.codigo_detalle || null,
         codigo_barras: f.codigo_barras || null,
-        costo: f.costo === '' ? 0 : Number(f.costo),
-        precio: f.precio === '' ? 0 : Number(f.precio),
-        preciofull: f.preciofull === '' ? (f.precio === '' ? 0 : Number(f.precio)) : Number(f.preciofull),
+        costo,
+        precio,
+        preciofull,
+        stock_inicial: f.stock_inicial === '' ? 0 : Number(f.stock_inicial),
         stock: f.stock === '' ? 0 : Number(f.stock),
       })),
     };
@@ -165,6 +231,20 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
       const subida = await api.subirImagen('productos', idFinal, archivoImagen);
       if (!subida.success) {
         alert(subida.error || 'El producto se guardó, pero la imagen no se pudo subir');
+      }
+    }
+
+    if (filasEliminadas.length > 0) {
+      const erroresEliminar = [];
+      for (const filaEliminada of filasEliminadas) {
+        const params = filaEliminada.vaciarStock ? 'fisico=1&vaciar_stock=1' : 'fisico=1';
+        const del = await api.delete('productos', filaEliminada.id, params);
+        if (!del.success) {
+          erroresEliminar.push(`Presentación #${filaEliminada.id}: ${del.error || 'no se pudo eliminar'}`);
+        }
+      }
+      if (erroresEliminar.length > 0) {
+        alert(`El producto se guardó, pero algunas presentaciones no se pudieron eliminar:\n\n${erroresEliminar.join('\n')}`);
       }
     }
 
@@ -200,8 +280,8 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
             <Campo label="Nombre del producto" required className="md:col-span-2">
               <Input required value={formData.nombre} onChange={(e) => set('nombre', e.target.value)} placeholder="Nombre del producto base" />
             </Campo>
-            <Campo label="SKU / Código del producto" hint="Mismo código para todas las presentaciones. Auto si se deja vacío.">
-              <Input value={formData.sku_base} onChange={(e) => set('sku_base', e.target.value)} placeholder="P-00001" className="font-mono" />
+            <Campo label="SKU / Código del producto" hint={editando ? 'El SKU de cabecera no se puede modificar.' : 'Mismo código para todas las presentaciones. Auto si se deja vacío.'}>
+              <Input value={formData.sku_base} onChange={(e) => set('sku_base', e.target.value)} placeholder="P-00001" className="font-mono" disabled={editando} readOnly={editando} />
             </Campo>
           </div>
 
@@ -209,11 +289,53 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
             <TextArea rows={2} value={formData.descripcion} onChange={(e) => set('descripcion', e.target.value)} placeholder="Descripción del producto" />
           </Campo>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <Campo label="Costo ($)">
+              <Input type="number" step="0.01" min="0" value={formData.costo} onChange={(e) => set('costo', e.target.value)} />
+            </Campo>
+            <Campo label="Precio ($)" required>
+              <Input type="number" step="0.01" min="0" required value={formData.precio} onChange={(e) => set('precio', e.target.value)} />
+            </Campo>
+            <Campo label="Precio especial ($)">
+              <Input type="number" step="0.01" min="0" value={formData.preciofull} onChange={(e) => set('preciofull', e.target.value)} />
+            </Campo>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             <Campo label="Categoría" required>
-              <Select required value={formData.idcategoria} onChange={(e) => set('idcategoria', e.target.value)}>
+              <Select
+                required
+                value={formData.idcategoria}
+                onChange={(e) => {
+                  const idcategoria = e.target.value;
+                  setFormData((prev) => ({ ...prev, idcategoria, idsubcategoria: '' }));
+                }}
+              >
                 <option value="">Selecciona...</option>
                 {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </Select>
+            </Campo>
+            <Campo
+              label="Subcategoría"
+              required
+              hint={
+                !formData.idcategoria
+                  ? 'Selecciona primero una categoría'
+                  : subcategoriasFiltradas.length === 0
+                    ? 'Esta categoría no tiene subcategorías activas. Crea una en Catálogos > Subcategorías.'
+                    : undefined
+              }
+            >
+              <Select
+                required={!!formData.idcategoria && subcategoriasFiltradas.length > 0}
+                value={formData.idsubcategoria}
+                onChange={(e) => set('idsubcategoria', e.target.value)}
+                disabled={!formData.idcategoria || subcategoriasFiltradas.length === 0}
+              >
+                <option value="">
+                  {subcategoriasFiltradas.length === 0 ? 'Sin subcategorías disponibles' : 'Selecciona...'}
+                </option>
+                {subcategoriasFiltradas.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
               </Select>
             </Campo>
             <Campo label="Marca" required>
@@ -222,8 +344,9 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
                 {marcas.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
               </Select>
             </Campo>
-            <Campo label="Modelo">
-              <Select value={formData.idmodelo} onChange={(e) => set('idmodelo', e.target.value)}>
+            <Campo label="Modelo" required>
+              <Select required value={formData.idmodelo} onChange={(e) => set('idmodelo', e.target.value)}>
+                <option value="">Selecciona...</option>
                 {modelos.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}
               </Select>
             </Campo>
@@ -265,7 +388,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
                 <div key={fila._key} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[11px] font-black uppercase tracking-wider text-gray-500">Fila {idx + 1} {fila.id ? <span className="text-cyan-500">#SKU {fila.id}</span> : <span className="text-emerald-500">Nueva</span>}</p>
-                    <Boton type="button" variante="peligro" tamano="sm" icono="papelera" onClick={() => quitarFila(fila._key)} disabled={filas.length === 1}>
+                    <Boton type="button" variante="peligro" tamano="sm" icono="papelera" onClick={() => quitarFila(fila._key)}>
                       Quitar
                     </Boton>
                   </div>
@@ -301,29 +424,36 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
                     </Campo>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <Campo label="Código de detalle" hint="Auto si se deja vacío">
                       <Input value={fila.codigo_detalle} onChange={(e) => setFila(fila._key, 'codigo_detalle', e.target.value)} className="font-mono" placeholder="SKU-01" />
                     </Campo>
                     <Campo label="Código de barras">
                       <Input value={fila.codigo_barras} onChange={(e) => setFila(fila._key, 'codigo_barras', e.target.value)} />
                     </Campo>
-                    <Campo label={editando && fila.id ? 'Stock actual' : 'Stock inicial'} hint={editando && fila.id ? 'Al guardar, el cambio genera un ajuste auditado.' : 'Se registra como entrada inicial.'}>
-                      <Input type="number" min="0" value={fila.stock} onChange={(e) => setFila(fila._key, 'stock', e.target.value)} />
+                    <Campo label="Stock inicial" hint={fila.id ? 'Punto de partida, no editable.' : 'Se registra como entrada inicial.'}>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={fila.stock_inicial}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setFilas((prev) => prev.map((x) => (x._key === fila._key ? { ...x, stock_inicial: v, ...(x.id ? {} : { stock: v }) } : x)));
+                        }}
+                        disabled={Boolean(fila.id)}
+                      />
+                    </Campo>
+                    <Campo label="Stock actual" hint={fila.id ? 'Al guardar, el cambio genera un ajuste auditado.' : 'Se define con el stock inicial.'}>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={fila.stock}
+                        onChange={(e) => setFila(fila._key, 'stock', e.target.value)}
+                        disabled={!fila.id}
+                      />
                     </Campo>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <Campo label="Costo ($)">
-                      <Input type="number" step="0.01" min="0" value={fila.costo} onChange={(e) => setFila(fila._key, 'costo', e.target.value)} />
-                    </Campo>
-                    <Campo label="Precio ($)" required>
-                      <Input type="number" step="0.01" min="0" required value={fila.precio} onChange={(e) => setFila(fila._key, 'precio', e.target.value)} />
-                    </Campo>
-                    <Campo label="Precio full ($)">
-                      <Input type="number" step="0.01" min="0" value={fila.preciofull} onChange={(e) => setFila(fila._key, 'preciofull', e.target.value)} />
-                    </Campo>
-                  </div>
 
                   <div className="text-[11px] text-gray-500">
                     Unidad de medida: <span className="font-semibold text-gray-700 dark:text-gray-300">{abreviaturaUnidad}</span> (heredada de la cabecera)

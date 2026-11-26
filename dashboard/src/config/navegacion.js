@@ -1,12 +1,14 @@
 // Permiso .ver necesario para mostrar cada modulo del dashboard.
 // El modulo "seguridad" se evalua con la regla especial puedeSeguridad.
 export const ACCESO_MODULO = {
+  divisas: null,
   productos: 'productos.ver',
   inventario: 'inventario.ver',
   movimientos: 'movimientos.ver',
   almacenes: 'almacenes.ver',
   ubicaciones: 'ubicaciones.ver',
   categorias: 'categorias.ver',
+  subcategorias: 'categorias.ver',
   marcas: 'marcas.ver',
   catalogos: 'catalogos.ver',
   unidades: 'unidades.ver',
@@ -16,6 +18,12 @@ export const ACCESO_MODULO = {
 };
 
 export const GRUPOS_MENU = [
+  {
+    title: 'Panel de control',
+    items: [
+      { id: 'divisas', label: 'Divisas y tasas', icono: 'dinero', hint: 'Dólar, euro, USDT y monto personalizado' },
+    ],
+  },
   {
     title: 'Operación',
     items: [
@@ -35,6 +43,7 @@ export const GRUPOS_MENU = [
     title: 'Catálogos',
     items: [
       { id: 'categorias', label: 'Categorías', icono: 'categoria', hint: 'Familias principales' },
+      { id: 'subcategorias', label: 'Subcategorías', icono: 'categoria', hint: 'Clasificación dentro de categorías' },
       { id: 'marcas', label: 'Marcas', icono: 'marca', hint: 'Fabricantes y marcas' },
       { id: 'catalogos', label: 'Modelos, colores y tallas', icono: 'catalogo', hint: 'Atributos de variantes' },
       { id: 'unidades', label: 'Unidades de medida', icono: 'inventario', hint: 'Pieza, docena, paquete, etc.' },

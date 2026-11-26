@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import AppLayout from '../layout/AppLayout';
+import ModuloDivisas from './ModuloDivisas';
 import CrudProductos from './CrudProductos';
 import CrudCategorias from './CrudCategorias';
+import CrudSubcategorias from './CrudSubcategorias';
 import CrudMarcas from './CrudMarcas';
 import CrudAlmacenes from './CrudAlmacenes';
 import CrudUbicaciones from './CrudUbicaciones';
@@ -18,6 +20,12 @@ import { useAuth } from '../../context/AuthContext';
 import { ACCESO_MODULO } from '../../config/navegacion';
 
 const MODULOS = {
+  divisas: {
+    componente: ModuloDivisas,
+    titulo: 'Divisas y tasas de cambio',
+    descripcion: 'Consulta y actualiza diariamente el dólar, euro, USDT y un monto personalizado.',
+    grupo: 'Panel de control',
+  },
   productos: {
     componente: CrudProductos,
     titulo: 'Productos y SKUs',
@@ -52,6 +60,12 @@ const MODULOS = {
     componente: CrudCategorias,
     titulo: 'Categorías',
     descripcion: 'Organiza los productos en familias para facilitar su gestión y búsqueda.',
+    grupo: 'Catálogos',
+  },
+  subcategorias: {
+    componente: CrudSubcategorias,
+    titulo: 'Subcategorías',
+    descripcion: 'Define subcategorías dentro de cada categoría para clasificar mejor los productos.',
     grupo: 'Catálogos',
   },
   marcas: {

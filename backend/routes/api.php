@@ -21,6 +21,7 @@ require_once __DIR__ . '/../controllers/UsuarioController.php';
 require_once __DIR__ . '/../controllers/RolController.php';
 require_once __DIR__ . '/../controllers/PermisoController.php';
 require_once __DIR__ . '/../controllers/SeguridadController.php';
+require_once __DIR__ . '/../controllers/TasaCambioController.php';
 
 $ctrlProd  = new ProductoController();
 $ctrlCat   = new CategoriaController();
@@ -37,6 +38,7 @@ $ctrlUser  = new UsuarioController();
 $ctrlRol   = new RolController();
 $ctrlPerm  = new PermisoController();
 $ctrlSeg   = new SeguridadController();
+$ctrlTasa  = new TasaCambioController();
 
 // ==============================================================
 // 0. AUTENTICACION Y CONTROL DE ACCESOS
@@ -374,6 +376,38 @@ if ($metodo === 'POST' && ($url === 'whatsapp/reiniciar' || $url === 'api/whatsa
 }
 if ($metodo === 'POST' && ($url === 'whatsapp/logout' || $url === 'api/whatsapp/logout' || $url === 'whatsapp/cerrar' || $url === 'api/whatsapp/cerrar')) {
     $ctrlWa->cerrarSesion();
+    exit;
+}
+
+// ==============================================================
+// 11. TASAS DE CAMBIO / DIVISAS
+// ==============================================================
+if ($metodo === 'GET' && ($url === 'tasas-cambio/resumen' || $url === 'api/tasas-cambio/resumen')) {
+    $ctrlTasa->resumen();
+    exit;
+}
+if ($metodo === 'POST' && ($url === 'tasas-cambio/sincronizar' || $url === 'api/tasas-cambio/sincronizar')) {
+    $ctrlTasa->sincronizar();
+    exit;
+}
+if ($metodo === 'GET' && preg_match('#^(?:api/)?tasas-cambio/([0-9]+)$#', $url, $m)) {
+    $ctrlTasa->mostrar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'GET' && ($url === 'tasas-cambio' || $url === 'api/tasas-cambio')) {
+    $ctrlTasa->listar();
+    exit;
+}
+if ($metodo === 'POST' && ($url === 'tasas-cambio' || $url === 'api/tasas-cambio')) {
+    $ctrlTasa->crear();
+    exit;
+}
+if ($metodo === 'PUT' && preg_match('#^(?:api/)?tasas-cambio/([0-9]+)$#', $url, $m)) {
+    $ctrlTasa->actualizar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'DELETE' && preg_match('#^(?:api/)?tasas-cambio/([0-9]+)$#', $url, $m)) {
+    $ctrlTasa->eliminar((int) $m[1]);
     exit;
 }
 

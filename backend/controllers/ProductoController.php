@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../models/Producto.php';
+require_once __DIR__ . '/../models/Subcategoria.php';
 
 class ProductoController
 {
@@ -14,6 +15,7 @@ class ProductoController
             $filtros = [
                 'q'             => $_GET['q'] ?? '',
                 'idcategoria'   => $_GET['idcategoria'] ?? '',
+                'idsubcategoria' => $_GET['idsubcategoria'] ?? '',
                 'idmarca'       => $_GET['idmarca'] ?? '',
                 'idmodelo'      => $_GET['idmodelo'] ?? '',
                 'idcolor'       => $_GET['idcolor'] ?? '',
@@ -64,6 +66,11 @@ class ProductoController
                 responder(false, $errores, 400);
             }
 
+            $errSub = $this->validarSubcategoria((int) ($datos['idcategoria'] ?? 0), (int) ($datos['idsubcategoria'] ?? 0));
+            if ($errSub) {
+                responder(false, $errSub, 400);
+            }
+
             $nuevoId = Producto::crear($datos);
             responder(true, [
                 'id'      => $nuevoId,
@@ -95,6 +102,10 @@ class ProductoController
                 if (!empty($errores)) {
                     responder(false, $errores, 400);
                 }
+                $errSub = $this->validarSubcategoria((int) ($fusion['idcategoria'] ?? 0), (int) ($fusion['idsubcategoria'] ?? 0));
+                if ($errSub) {
+                    responder(false, $errSub, 400);
+                }
                 // Para cambios simples de estatus/campos base en SKU antiguo, usar update directo por fila.
                 $db = Database::conectar();
                 $campos = [];
@@ -122,6 +133,11 @@ class ProductoController
                 responder(false, $errores, 400);
             }
 
+            $errSub = $this->validarSubcategoria((int) ($fusion['idcategoria'] ?? 0), (int) ($fusion['idsubcategoria'] ?? 0));
+            if ($errSub) {
+                responder(false, $errSub, 400);
+            }
+
             Producto::actualizar($id, $fusion);
             responder(true, ['mensaje' => 'Producto actualizado correctamente'], 200);
         } catch (Throwable $e) {
@@ -133,9 +149,10 @@ class ProductoController
     {
         try {
             $fisico = isset($_GET['fisico']) && (int) $_GET['fisico'] === 1;
+            $vaciarStock = isset($_GET['vaciar_stock']) && (int) $_GET['vaciar_stock'] === 1;
 
             if ($fisico) {
-                Producto::eliminarFisico($id);
+                Producto::eliminarFisico($id, $vaciarStock);
                 responder(true, ['mensaje' => "Producto #{$id} eliminado definitivamente"], 200);
             }
 
@@ -219,11 +236,24 @@ class ProductoController
         $errores = [];
         if (empty($datos['nombre'])) $errores[] = 'El nombre del producto es obligatorio';
         if (empty($datos['idcategoria'])) $errores[] = 'Debes asignar una categoria valida';
+        if (empty($datos['idsubcategoria'])) $errores[] = 'Debes asignar una subcategoria valida';
         if (empty($datos['idmarca'])) $errores[] = 'Debes asignar una marca valida';
+        if (empty($datos['idmodelo'])) $errores[] = 'Debes asignar un modelo valido';
         if (!empty($datos['sku_base']) && !preg_match('/^[A-Za-z0-9._-]{3,64}$/', (string) $datos['sku_base'])) {
             $errores[] = 'El SKU solo admite letras, numeros, punto, guion y guion bajo (3 a 64 caracteres)';
         }
         return $errores;
+    }
+
+    private function validarSubcategoria(?int $idcategoria, ?int $idsubcategoria): ?string
+    {
+        if (!$idcategoria || !$idsubcategoria) return null;
+        $sub = Subcategoria::obtenerPorId($idsubcategoria);
+        if (!$sub) return 'La subcategoria seleccionada no existe';
+        if ((int) $sub['idcategoria'] !== (int) $idcategoria) {
+            return 'La subcategoria seleccionada no pertenece a la categoria indicada';
+        }
+        return null;
     }
 
     private function validar(?array $datos, bool $requiereFilas): array
@@ -246,15 +276,24 @@ class ProductoController
             ]];
         }
 
-        if ($requiereFilas && count($filas) === 0) {
-            $errores[] = 'Debes agregar al menos una fila de almacen/variante';
+        // Se permite guardar sin filas para poder vaciar detalles y luego eliminar el producto base.
+
+        $precioCabecera = $datos['precio'] ?? null;
+        $costoCabecera = $datos['costo'] ?? null;
+        if ($precioCabecera !== null && $precioCabecera !== '' && (float) $precioCabecera <= 0) {
+            $errores[] = 'El precio debe ser mayor a 0';
+        }
+        if ($costoCabecera !== null && $costoCabecera !== '' && (float) $costoCabecera < 0) {
+            $errores[] = 'El costo no puede ser negativo';
         }
 
         $barcodes = [];
         foreach ($filas as $i => $fila) {
             $n = $i + 1;
-            if (!isset($fila['precio']) || (float) $fila['precio'] <= 0) $errores[] = "Fila {$n}: el precio debe ser mayor a 0";
-            if (isset($fila['costo']) && (float) $fila['costo'] < 0) $errores[] = "Fila {$n}: el costo no puede ser negativo";
+            $precio = $fila['precio'] ?? $precioCabecera;
+            $costo = $fila['costo'] ?? $costoCabecera;
+            if ($precio === null || $precio === '' || (float) $precio <= 0) $errores[] = "Fila {$n}: el precio debe ser mayor a 0";
+            if ($costo !== null && $costo !== '' && (float) $costo < 0) $errores[] = "Fila {$n}: el costo no puede ser negativo";
             $stock = $fila['stock'] ?? ($fila['stock_inicial'] ?? 0);
             if ($stock !== '' && $stock !== null && (int) $stock < 0) $errores[] = "Fila {$n}: el stock no puede ser negativo";
             if (empty($fila['almacen_id'])) $errores[] = "Fila {$n}: debes seleccionar un almacen";

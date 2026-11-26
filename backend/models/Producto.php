@@ -11,12 +11,13 @@ class Producto
     {
         return "SELECT
                     p.id, p.producto_base_id, p.es_base, p.nombre, p.descripcion,
-                    p.precio, p.preciofull, p.costo, p.stock, p.imagen,
+                    p.precio, p.preciofull, p.costo, p.stock, p.stock_inicial, p.imagen,
                     p.estrellas, p.idestatus, p.idcategoria, p.idsubcategoria,
                     p.idmarca, p.idmodelo, p.idcolor, p.idtalla, p.idunidad,
                     p.sku_base, p.codigo_producto, p.codigo_detalle, p.codigo_barras, p.unidad_medida,
                     p.created_at, p.updated_at,
                     c.id AS idcategoria_ref, c.nombre AS categoria,
+                    sc.nombre AS subcategoria,
                     m.id AS idmarca_ref, m.nombre AS marca,
                     mo.nombre AS modelo,
                     co.nombre AS color, co.codigo_hex AS color_hex,
@@ -29,6 +30,7 @@ class Producto
                       WHERE pa.producto_id = p.id) AS almacenes_codigo
                 FROM productos p
                 LEFT JOIN categorias c ON c.id = p.idcategoria
+                LEFT JOIN subcategorias sc ON sc.id = p.idsubcategoria
                 LEFT JOIN marcas m     ON m.id = p.idmarca
                 LEFT JOIN modelos mo   ON mo.id = p.idmodelo
                 LEFT JOIN colores co   ON co.id = p.idcolor
@@ -123,6 +125,7 @@ class Producto
             'costo' => (float) ($p['costo'] ?? 0),
             'precio' => (float) ($p['precio'] ?? 0),
             'preciofull' => (float) ($p['preciofull'] ?? 0),
+            'stock_inicial' => (int) ($p['stock_inicial'] ?? 0),
             'stock' => (int) ($p['stock'] ?? 0),
             'sku_base' => $p['sku_base'] ?? '',
             'sku_almacen' => $p['sku_almacen'] ?? '',
@@ -184,6 +187,10 @@ class Producto
         if (!empty($f['idcategoria'])) {
             $sql .= " AND p.idcategoria = :cat";
             $params[':cat'] = (int) $f['idcategoria'];
+        }
+        if (!empty($f['idsubcategoria'])) {
+            $sql .= " AND p.idsubcategoria = :subcat";
+            $params[':subcat'] = (int) $f['idsubcategoria'];
         }
         if (!empty($f['idmarca'])) {
             $sql .= " AND p.idmarca = :mar";
@@ -265,6 +272,7 @@ class Producto
             foreach ([':q1',':q2',':q3',':q4',':q5',':q6',':q7',':q8',':q9'] as $k) $params[$k] = $term;
         }
         if (!empty($f['idcategoria'])) { $where[] = "p.idcategoria = :cat"; $params[':cat'] = (int)$f['idcategoria']; }
+        if (!empty($f['idsubcategoria'])) { $where[] = "p.idsubcategoria = :subcat"; $params[':subcat'] = (int)$f['idsubcategoria']; }
         if (!empty($f['idmarca'])) { $where[] = "p.idmarca = :mar"; $params[':mar'] = (int)$f['idmarca']; }
         if (!empty($f['idmodelo'])) { $where[] = "p.idmodelo = :mod"; $params[':mod'] = (int)$f['idmodelo']; }
         if (!empty($f['idunidad'])) { $where[] = "p.idunidad = :uni"; $params[':uni'] = (int)$f['idunidad']; }
@@ -328,6 +336,7 @@ class Producto
         elseif (isset($f['estatus']) && $f['estatus'] !== '') { $where2[] = "p.idestatus = :estatus"; $params2[':estatus'] = (int)$f['estatus']; }
         if (!empty($f['q'])) { $where2[] = "(p.nombre LIKE :q OR p.sku_base LIKE :q2 OR p.codigo_producto LIKE :q3 OR p.codigo_barras LIKE :q4)"; $term='%'.$f['q'].'%'; $params2[':q']=$term;$params2[':q2']=$term;$params2[':q3']=$term;$params2[':q4']=$term; }
         if (!empty($f['idcategoria'])) { $where2[]="p.idcategoria=:cat"; $params2[':cat']=(int)$f['idcategoria']; }
+        if (!empty($f['idsubcategoria'])) { $where2[]="p.idsubcategoria=:subcat"; $params2[':subcat']=(int)$f['idsubcategoria']; }
         if (!empty($f['idmarca'])) { $where2[]="p.idmarca=:mar"; $params2[':mar']=(int)$f['idmarca']; }
         if (!empty($f['idmodelo'])) { $where2[]="p.idmodelo=:mod"; $params2[':mod']=(int)$f['idmodelo']; }
         if (!empty($f['idunidad'])) { $where2[]="p.idunidad=:uni"; $params2[':uni']=(int)$f['idunidad']; }
@@ -429,13 +438,14 @@ class Producto
         $codigoProducto = trim((string) ($datos['codigo_producto'] ?? ''));
         $codigoDetalle = trim((string) ($datos['codigo_detalle'] ?? ''));
 
+        $stockInicial = max(0, (int) ($datos['stock_inicial'] ?? 0));
         $sql = "INSERT INTO productos
                 (producto_base_id, es_base, nombre, descripcion, precio, preciofull, costo,
-                 stock, idcategoria, idsubcategoria, idmarca, idmodelo, idcolor, idtalla, idunidad,
+                 stock, stock_inicial, idcategoria, idsubcategoria, idmarca, idmodelo, idcolor, idtalla, idunidad,
                  sku_base, codigo_producto, codigo_detalle, codigo_barras, unidad_medida, estrellas, imagen, idestatus)
                 VALUES
                 (:producto_base_id, :es_base, :nombre, :descripcion, :precio, :preciofull, :costo,
-                 0, :idcategoria, :idsubcategoria, :idmarca, :idmodelo, :idcolor, :idtalla, :idunidad,
+                 0, :stock_inicial, :idcategoria, :idsubcategoria, :idmarca, :idmodelo, :idcolor, :idtalla, :idunidad,
                  :sku_base, :codigo_producto, :codigo_detalle, :codigo_barras, :unidad_medida, :estrellas, :imagen, :idestatus)";
         $stmt = $db->prepare($sql);
         $stmt->execute([
@@ -446,6 +456,7 @@ class Producto
             ':precio'           => $precio,
             ':preciofull'       => (float) ($datos['preciofull'] ?? ($precio > 0 ? $precio : 0)),
             ':costo'            => (float) ($datos['costo'] ?? 0),
+            ':stock_inicial'    => $stockInicial,
             ':idcategoria'      => (int) ($datos['idcategoria'] ?? 1),
             ':idsubcategoria'   => (int) ($datos['idsubcategoria'] ?? 1),
             ':idmarca'          => (int) ($datos['idmarca'] ?? 1),
@@ -633,6 +644,25 @@ class Producto
         ]);
     }
 
+    private static function validarFilasUnicas(array $filas, string $codigoProducto): void
+    {
+        $vistos = [];
+        foreach ($filas as $i => $fila) {
+            $almacen = (int) ($fila['almacen_id'] ?? 0);
+            $ubicacion = ($fila['ubicacion_id'] ?? '') === '' ? '0' : (string) (int) $fila['ubicacion_id'];
+            $color = (int) ($fila['idcolor'] ?? 1);
+            $talla = (int) ($fila['idtalla'] ?? 1);
+            $key = implode('|', [$codigoProducto, $almacen, $ubicacion, $color, $talla]);
+            if (isset($vistos[$key])) {
+                $n = $i + 1;
+                throw new InvalidArgumentException(
+                    "Fila {$n}: ya existe otra presentación con la misma combinación SKU + almacén + ubicación + color + talla."
+                );
+            }
+            $vistos[$key] = true;
+        }
+    }
+
     private static function normalizarFilas(array $datos): array
     {
         $filas = $datos['filas'] ?? null;
@@ -671,9 +701,7 @@ class Producto
 
         try {
             $filas = self::normalizarFilas($datos);
-            if (count($filas) === 0) {
-                throw new InvalidArgumentException('Debes agregar al menos una fila de almacen/variante');
-            }
+            self::validarFilasUnicas($filas, trim((string) ($datos['sku_base'] ?? $datos['codigo_producto'] ?? '')));
 
             $baseData = $datos;
             $baseData['producto_base_id'] = null;
@@ -751,9 +779,7 @@ class Producto
             }
 
             $filas = self::normalizarFilas($datos);
-            if (count($filas) === 0) {
-                throw new InvalidArgumentException('Debes incluir al menos una fila de almacen/variante');
-            }
+            self::validarFilasUnicas($filas, trim((string) ($baseActual['codigo_producto'] ?? $baseActual['sku_base'] ?? '')));
 
             $baseData = array_merge($baseActual, $datos);
             $baseData['producto_base_id'] = null;
@@ -765,9 +791,8 @@ class Producto
             $baseData['idcolor'] = 1;
             $baseData['idtalla'] = 1;
             $baseData['sku_base'] = $baseActual['sku_base'];
-            $codigoProducto = trim((string) ($datos['sku_base'] ?? $datos['codigo_producto'] ?? $baseActual['codigo_producto'] ?? $baseActual['sku_base'] ?? ''));
-            $baseData['sku_base'] = $codigoProducto !== '' ? $codigoProducto : $baseActual['sku_base'];
-            $baseData['codigo_producto'] = $baseData['sku_base'];
+            $codigoProducto = trim((string) ($baseActual['codigo_producto'] ?? $baseActual['sku_base'] ?? ''));
+            $baseData['codigo_producto'] = $codigoProducto;
             $baseData['codigo_detalle'] = null;
             self::actualizarProductoRow($db, $baseId, $baseData, true);
             $baseRow = self::obtenerRegistroSimple($baseId);
@@ -1011,7 +1036,7 @@ class Producto
         return $stmt->execute([':id' => $id]);
     }
 
-    public static function eliminarFisico(int $id): bool
+    public static function eliminarFisico(int $id, bool $vaciarStock = false): bool
     {
         $db = Database::conectar();
         $db->beginTransaction();
@@ -1035,15 +1060,45 @@ class Producto
                 }
             }
 
-            // Tampoco se elimina un registro con inventario pendiente.
             $stmt = $db->prepare("SELECT COALESCE(SUM(cantidad), 0) FROM inventario WHERE producto_id = :id");
             $stmt->execute([':id' => $id]);
             $stock = (int) $stmt->fetchColumn();
             if ($stock > 0) {
-                throw new RuntimeException(
-                    "No se puede eliminar: el producto tiene {$stock} unidad(es) en inventario. " .
-                    'Ajusta el stock a cero primero.'
+                if (!$vaciarStock) {
+                    throw new RuntimeException(
+                        "No se puede eliminar: el producto tiene {$stock} unidad(es) en inventario. " .
+                        'Ajusta el stock a cero primero.'
+                    );
+                }
+
+                // Vaciar existencia antes de eliminar, dejando registro de ajuste.
+                $stmtInv = $db->prepare(
+                    "SELECT i.ubicacion_id, i.cantidad, u.almacen_id
+                     FROM inventario i
+                     JOIN ubicaciones u ON u.id = i.ubicacion_id
+                     WHERE i.producto_id = :id AND i.cantidad > 0"
                 );
+                $stmtInv->execute([':id' => $id]);
+                $filasInv = $stmtInv->fetchAll();
+                $stmtMov = $db->prepare(
+                    "INSERT INTO movimientos_inventario
+                        (tipo, producto_id, almacen_origen_id, ubicacion_origen_id, cantidad, costo_unitario, referencia, motivo, usuario_id)
+                     VALUES
+                        ('ajuste', :p, :a, :u, 0, :costo, :ref, :motivo, NULL)"
+                );
+                foreach ($filasInv as $inv) {
+                    $stmtMov->execute([
+                        ':p'      => $id,
+                        ':a'      => (int) $inv['almacen_id'],
+                        ':u'      => (int) $inv['ubicacion_id'],
+                        ':costo'  => (float) ($actual['costo'] ?? 0),
+                        ':ref'    => 'Eliminacion de producto',
+                        ':motivo' => 'Stock puesto en cero automaticamente antes de eliminar la presentacion',
+                    ]);
+                }
+
+                $db->prepare("DELETE FROM inventario WHERE producto_id = :id")->execute([':id' => $id]);
+                $db->prepare("UPDATE productos SET stock = 0 WHERE id = :id")->execute([':id' => $id]);
             }
 
             $stmt = $db->prepare("DELETE FROM productos WHERE id = :id");
