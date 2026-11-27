@@ -73,7 +73,7 @@ const CrudMovimientos = () => {
     const cols = [
       { header: 'ID', valor: (r) => r.id },
       { header: 'Fecha', valor: (r) => r.created_at || '' },
-      { header: 'Tipo', valor: (r) => r.tipo || '' },
+      { header: 'Tipo', valor: (r) => (r.tipo === 'merma' ? 'salida' : r.tipo) || '' },
       { header: 'Código', valor: (r) => r.codigo_producto || r.sku_base || '' },
       { header: 'SKU', valor: (r) => r.sku_base || '' },
       { header: 'Producto', valor: (r) => r.producto || '' },
@@ -93,14 +93,14 @@ const CrudMovimientos = () => {
     if (filtros.desde) filtrosRep.push({ label: 'Desde', value: filtros.desde });
     if (filtros.hasta) filtrosRep.push({ label: 'Hasta', value: filtros.hasta });
     if (tipo === 'excel') exportarExcel({ nombre: 'reporte_movimientos', hoja: 'Movimientos', columnas: cols, filas: movimientos });
-    else exportarPDF({ nombre: 'reporte_movimientos', titulo: 'Reporte de Movimientos (Kardex)', filtros: filtrosRep, columnas: cols, filas: movimientos });
+    else exportarPDF({ nombre: 'reporte_movimientos', titulo: 'Reporte de Movimientos / Kardex', filtros: filtrosRep, columnas: cols, filas: movimientos });
   };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-black text-gray-900 dark:text-white">Movimientos (Kardex)</h2>
+          <h2 className="text-sm font-black text-gray-900 dark:text-white">Movimientos / Kardex</h2>
           <p className="text-[11px] text-gray-500 mt-0.5">Auditoría completa de entradas, salidas y ajustes</p>
         </div>
         <div className="flex items-center gap-2">
@@ -188,8 +188,8 @@ const CrudMovimientos = () => {
             <Td className="font-mono text-gray-500">#{m.id}</Td>
             <Td className="text-gray-400 text-[10px] whitespace-nowrap">{m.created_at}</Td>
             <Td>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${COLOR_TIPO[m.tipo] || 'bg-gray-700 text-gray-300'}`}>
-                {m.tipo}
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${COLOR_TIPO[m.tipo === 'merma' ? 'salida' : m.tipo] || 'bg-gray-700 text-gray-300'}`}>
+                {m.tipo === 'merma' ? 'salida' : m.tipo}
               </span>
             </Td>
             <Td className="max-w-xs">

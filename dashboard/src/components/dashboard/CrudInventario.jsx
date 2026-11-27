@@ -257,7 +257,7 @@ const CrudInventario = () => {
   const tipoActual = TIPOS.find((t) => t.id === form.tipo);
 
   const grupos = inventario.reduce((acc, item) => {
-    const key = String(item.producto_id);
+    const key = String(item.codigo_producto || item.sku_base || item.producto_id);
     if (!acc[key]) acc[key] = { key, producto_id: item.producto_id, producto: item.producto, sku_base: item.sku_base, codigo_producto: item.codigo_producto, descripcion: item.descripcion, categoria: item.categoria, marca: item.marca, unidad: item.unidad, stock_total: item.stock_total, costo: item.costo, precio: item.precio, filas: [] };
     acc[key].filas.push(item);
     return acc;

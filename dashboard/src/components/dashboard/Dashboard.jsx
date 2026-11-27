@@ -39,7 +39,7 @@ const MODULOS = {
   },
   movimientos: {
     componente: CrudMovimientos,
-    titulo: 'Movimientos/Kardex',
+    titulo: 'Movimientos / Kardex',
     descripcion: 'Registra y audita entradas, salidas, traslados y ajustes de stock.',
     grupo: 'Operación',
   },

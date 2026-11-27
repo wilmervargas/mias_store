@@ -90,14 +90,14 @@ export default function Sidebar({ open, onClose, moduloActivo, onSelect }) {
                     type="button"
                     title={item.hint}
                     onClick={() => { onSelect(item.id); onClose?.(); }}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    className={`flex w-full items-start gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
                       activo
                         ? 'bg-gradient-to-r from-pink-500/25 to-purple-500/20 text-white'
                         : 'text-gray-300 hover:bg-white/5 hover:text-white'
                     }`}
                   >
-                    <Icono nombre={item.icono} className={`h-4 w-4 ${activo ? 'text-pink-300' : ''}`} />
-                    <span className="truncate">{item.label}</span>
+                    <Icono nombre={item.icono} className={`mt-0.5 h-4 w-4 shrink-0 ${activo ? 'text-pink-300' : ''}`} />
+                    <span className="text-left leading-snug whitespace-normal break-words">{item.label}</span>
                   </button>
                 );
               })}
