@@ -314,6 +314,41 @@ class ProductoController
         }
     }
 
+    /** POST /?url=productos/{id}/stock-inicial - solo superusuario, con contraseña */
+    public function actualizarStockInicial(int $id): void
+    {
+        try {
+            $usuario = Authz::requiereAutenticado();
+            if ((int) ($usuario['is_superuser'] ?? 0) !== 1) {
+                responder(false, 'Solo un superusuario puede modificar el stock inicial.', 403);
+            }
+            $datos = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($datos)) responder(false, 'Cuerpo de petición inválido. Se espera JSON', 400);
+
+            $password = (string) ($datos['password'] ?? $datos['clave'] ?? '');
+            $stockInicial = $datos['stock_inicial'] ?? null;
+            if ($password === '') responder(false, 'Debes ingresar tu contraseña de superusuario.', 400);
+            if ($stockInicial === null || $stockInicial === '' || !is_numeric($stockInicial) || (int)$stockInicial < 0) {
+                responder(false, 'El stock inicial debe ser un número entero mayor o igual a 0.', 400);
+            }
+
+            $db = Database::conectar();
+            $stmt = $db->prepare('SELECT password_hash FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => (int) $usuario['id']]);
+            $hash = $stmt->fetchColumn();
+            if (!$hash || !password_verify($password, (string) $hash)) {
+                responder(false, 'Contraseña de superusuario incorrecta.', 403);
+            }
+
+            $ok = Producto::actualizarStockInicial($id, (int) $stockInicial);
+            if (!$ok) responder(false, 'No se pudo actualizar el stock inicial.', 500);
+
+            responder(true, ['id' => $id, 'stock_inicial' => (int) $stockInicial, 'mensaje' => 'Stock inicial actualizado correctamente.'], 200);
+        } catch (Throwable $e) {
+            responder(false, 'Error al actualizar stock inicial: ' . $e->getMessage(), 500);
+        }
+    }
+
     private function validarCabecera(array $datos): array
     {
         $errores = [];

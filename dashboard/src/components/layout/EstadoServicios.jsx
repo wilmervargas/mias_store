@@ -48,16 +48,22 @@ export default function EstadoServicios() {
     return () => { document.removeEventListener('mousedown', fuera); document.removeEventListener('keydown', esc); };
   }, [abierto]);
 
-  const comprobar = useCallback(async () => {
+  const comprobar = useCallback(async (completo = false) => {
     setComprobando(true);
-    setEstado(Object.fromEntries(SERVICIOS.map((s) => [s.id, 'checking'])));
+    setEstado((prev) => ({
+      backend: 'checking',
+      dashboard: 'up',
+      frontend: completo ? 'checking' : (prev.frontend || 'checking'),
+      whatsapp: 'checking',
+    }));
 
     const detectarFrontend = async () => {
-      for (const puerto of [5173, 5174, 4173]) {
+      // Solo en verificación completa/manual para evitar ruido ERR_CONNECTION_REFUSED en consola.
+      for (const puerto of [5173, 4173]) {
         const url = `http://${host}:${puerto}`;
         try {
           const ctrl = new AbortController();
-          const timer = setTimeout(() => ctrl.abort(), 3500);
+          const timer = setTimeout(() => ctrl.abort(), 2500);
           const res = await fetch(url, { mode: 'cors', cache: 'no-store', signal: ctrl.signal });
           clearTimeout(timer);
           if (!res.ok) continue;
@@ -68,30 +74,30 @@ export default function EstadoServicios() {
           if (esDashboard) continue;
           return true;
         } catch {
-          // Si no se puede leer (CORS/red), no asumir que es el frontend de la tienda.
+          // ignorar
         }
       }
       return false;
     };
 
-    const [backend, frontend, whatsapp] = await Promise.all([
+    const [backend, whatsapp, frontend] = await Promise.all([
       api.get('empresa').then((r) => r.success === true || r.error !== 'No se pudo conectar con el servidor. Verifica que el backend PHP este activo.').catch(() => false),
-      detectarFrontend(),
       api.get('whatsapp/estado').then((r) => Boolean(r?.success && r?.datos?.connected)).catch(() => false),
+      completo ? detectarFrontend() : Promise.resolve(null),
     ]);
 
-    setEstado({
+    setEstado((prev) => ({
       backend: backend ? 'up' : 'down',
       dashboard: 'up',
-      frontend: frontend ? 'up' : 'down',
+      frontend: frontend === null ? prev.frontend : (frontend ? 'up' : 'down'),
       whatsapp: whatsapp ? 'up' : 'down',
-    });
+    }));
     setComprobando(false);
   }, []);
 
   useEffect(() => {
-    comprobar();
-    const t = setInterval(comprobar, 30000);
+    comprobar(false);
+    const t = setInterval(() => comprobar(false), 60000);
     return () => clearInterval(t);
   }, [comprobar]);
 
@@ -114,7 +120,7 @@ export default function EstadoServicios() {
           <button
             key={s.id}
             type="button"
-            onClick={() => { setAbierto((v) => !v); comprobar(); }}
+            onClick={() => { setAbierto((v) => !v); comprobar(true); }}
             className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1.5 text-[10px] font-black tracking-wide transition ${
               estado[s.id] === 'up'
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300'
@@ -137,7 +143,7 @@ export default function EstadoServicios() {
             <p className="text-[11px] font-black text-gray-900 dark:text-white">Servicios (BK/ DH/ FR/ WS)</p>
             <button
               type="button"
-              onClick={comprobar}
+              onClick={() => comprobar(true)}
               disabled={comprobando}
               className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
               title="Volver a verificar"

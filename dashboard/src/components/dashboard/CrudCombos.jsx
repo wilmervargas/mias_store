@@ -4,6 +4,8 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { useConfirm } from '../ui/ConfirmProvider';
 import { useToast } from '../ui/ToastProvider';
 import Boton from '../ui/Boton';
+import Icono from '../ui/Icono';
+import PageHeader from '../ui/PageHeader';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Select } from '../ui/Campo';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
@@ -85,17 +87,18 @@ export default function CrudCombos() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-black text-gray-900 dark:text-white">Combos</h2>
-          <p className="text-[11px] text-gray-500 mt-0.5">Combos con precio propio; la disponibilidad depende del stock de sus componentes.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
-          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
-          <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nuevo combo</Boton>
-        </div>
-      </div>
+      <PageHeader
+        icon="capas"
+        title="Combos"
+        description="Combos con precio propio; la disponibilidad depende del stock de sus componentes."
+        actions={
+          <>
+            <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+            <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+            <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nuevo combo</Boton>
+          </>
+        }
+      />
 
       <BarraFiltros total={items.length} etiqueta="combos" onLimpiar={() => { setQ(''); setEstatus(''); }} puedeLimpiar={hayFiltros}>
         <Buscador value={q} onChange={setQ} placeholder="Buscar por SKU o nombre..." />
@@ -106,16 +109,22 @@ export default function CrudCombos() {
         </Select>
       </BarraFiltros>
 
-      <Tabla cargando={cargando} filas={items.length} mensajeVacio="No hay combos" columnas={[
-        <Th key="img">Img</Th>,
-        <Th key="sku">SKU</Th>,
-        <Th key="nombre">Combo</Th>,
-        <Th key="comp">Componentes</Th>,
-        <Th key="precio" className="text-right">Precio</Th>,
-        <Th key="disp" className="text-right">Disp.</Th>,
-        <Th key="est">Estatus</Th>,
-        <Th key="acc" className="text-right">Acciones</Th>,
-      ]}>
+      <Tabla
+        cargando={cargando}
+        vacio={items.length === 0}
+        colSpan={8}
+        textoVacio="No hay combos"
+        cabecera={<>
+          <Th>Img</Th>
+          <Th>SKU</Th>
+          <Th>Combo</Th>
+          <Th>Componentes</Th>
+          <Th align="right">Precio</Th>
+          <Th align="right">Disp.</Th>
+          <Th>Estatus</Th>
+          <Th align="right">Acciones</Th>
+        </>}
+      >
         {items.map((c) => (
           <tr key={c.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
             <Td>

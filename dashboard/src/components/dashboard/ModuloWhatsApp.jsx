@@ -282,12 +282,24 @@ export default function ModuloWhatsApp() {
               <TextArea rows={8} value={message} onChange={(e) => setMessage(e.target.value)} />
             </Campo>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Boton variante="exito" icono="enviar" onClick={handleSend} disabled={!canSend} cargando={sending}>
-                Enviar WhatsApp
+                Enviar por servicio
+              </Boton>
+              <Boton
+                variante="neutral"
+                icono="whatsapp"
+                onClick={() => {
+                  if (!/^58\d{10}$/.test(cleanPhone)) { alert('Indica un número destino válido.'); return; }
+                  const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message || '')}`;
+                  window.open(url, '_blank', 'noopener,noreferrer');
+                }}
+                disabled={!/^58\d{10}$/.test(cleanPhone) || !message.trim()}
+              >
+                Abrir WhatsApp Web (manual)
               </Boton>
               {!status.connected ? (
-                <span className="text-xs text-amber-600 dark:text-amber-400">El servicio debe estar conectado para enviar.</span>
+                <span className="text-xs text-amber-600 dark:text-amber-400">El envío por servicio requiere conexión; la opción manual funciona sin el servicio.</span>
               ) : null}
             </div>
 

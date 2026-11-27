@@ -11,7 +11,7 @@ require_once __DIR__ . '/../config/Database.php';
 class Inventario
 {
     /** Tipos de movimiento permitidos. */
-    public const TIPOS = ['entrada', 'salida', 'ajuste', 'transferencia', 'devolucion', 'venta', 'compra', 'migracion'];
+    public const TIPOS = ['entrada', 'salida', 'ajuste', 'transferencia', 'devolucion', 'venta', 'compra', 'migracion', 'merma'];
 
     /** Devuelve la ubicacion "General" (o la primera) de un almacen. */
     public static function ubicacionDefault(int $almacenId): ?int
@@ -257,12 +257,17 @@ class Inventario
     {
         $db = Database::conectar();
         $sql = "SELECT i.id, i.producto_id, i.ubicacion_id, i.cantidad, i.lote, i.fecha_vencimiento,
-                       p.nombre AS producto, p.sku_base,
+                       p.nombre AS producto, p.sku_base, p.codigo_producto, p.descripcion,
+                       p.stock AS stock_total, p.costo, p.precio,
+                       c.nombre AS categoria, ma.nombre AS marca, um.abreviatura AS unidad,
                        a.id AS almacen_id, a.codigo AS almacen_codigo, a.nombre AS almacen,
                        u.codigo AS ubicacion_codigo, u.ruta,
                        t.nombre AS tipo_ubicacion
                 FROM inventario i
                 JOIN productos p ON p.id = i.producto_id
+                LEFT JOIN categorias c ON c.id = p.idcategoria
+                LEFT JOIN marcas ma ON ma.id = p.idmarca
+                LEFT JOIN unidades um ON um.id = p.idunidad
                 JOIN ubicaciones u ON u.id = i.ubicacion_id
                 JOIN almacenes a ON a.id = u.almacen_id
                 JOIN tipos_ubicacion t ON t.id = u.idtipo_ubicacion
@@ -300,7 +305,7 @@ class Inventario
     public static function movimientos(array $f = []): array
     {
         $db = Database::conectar();
-        $sql = "SELECT mi.*, p.nombre AS producto, p.sku_base,
+        $sql = "SELECT mi.*, p.nombre AS producto, p.sku_base, p.codigo_producto, p.descripcion,
                        ao.codigo AS almacen_origen, ad.codigo AS almacen_destino,
                        uo.codigo AS ubicacion_origen, ud.codigo AS ubicacion_destino
                 FROM movimientos_inventario mi
@@ -411,7 +416,7 @@ class Inventario
                 self::asegurarProductoAlmacen($productoId, $almacenDestino);
             }
 
-            if (in_array($tipo, ['salida', 'venta', 'transferencia'], true)) {
+            if (in_array($tipo, ['salida', 'venta', 'transferencia', 'migracion', 'merma'], true)) {
                 if ($almacenOrigen === null) {
                     throw new InvalidArgumentException('Debes indicar el almacen de origen');
                 }
@@ -425,13 +430,33 @@ class Inventario
 
             if ($tipo === 'transferencia') {
                 if ($almacenDestino === null) {
-                    throw new InvalidArgumentException('Debes indicar el almacen de destino');
+                    throw new InvalidArgumentException('Debes indicar el almacén de destino');
                 }
                 if ($ubicacionDestino === null) {
                     $ubicacionDestino = self::ubicacionDefault($almacenDestino);
                 }
                 if ($ubicacionDestino === null) {
-                    throw new RuntimeException('El almacen de destino no tiene ubicaciones');
+                    throw new RuntimeException('El almacén de destino no tiene ubicaciones');
+                }
+                if ($ubicacionOrigen === $ubicacionDestino) {
+                    throw new InvalidArgumentException('La ubicación de origen y destino no pueden ser la misma.');
+                }
+                $stmtUb = $db->prepare("SELECT 1 FROM ubicaciones WHERE id = :u AND almacen_id = :a LIMIT 1");
+                $stmtUb->execute([':u' => $ubicacionDestino, ':a' => $almacenDestino]);
+                if (!$stmtUb->fetchColumn()) {
+                    throw new InvalidArgumentException('La ubicación destino no pertenece al almacén destino.');
+                }
+                // Verificar que el almacén destino esté registrado para este producto
+                $stmtPa = $db->prepare("SELECT 1 FROM producto_almacen WHERE producto_id = :p AND almacen_id = :a LIMIT 1");
+                $stmtPa->execute([':p' => $productoId, ':a' => $almacenDestino]);
+                $registrado = (bool) $stmtPa->fetchColumn();
+                if (!$registrado) {
+                    $stmtInv = $db->prepare("SELECT 1 FROM inventario i JOIN ubicaciones u ON u.id = i.ubicacion_id WHERE i.producto_id = :p AND u.almacen_id = :a LIMIT 1");
+                    $stmtInv->execute([':p' => $productoId, ':a' => $almacenDestino]);
+                    $registrado = (bool) $stmtInv->fetchColumn();
+                }
+                if (!$registrado) {
+                    throw new InvalidArgumentException('El almacén destino no está registrado para este producto.');
                 }
                 self::asegurarProductoAlmacen($productoId, $almacenDestino);
             }
@@ -446,6 +471,7 @@ class Inventario
                     break;
                 case 'salida':
                 case 'venta':
+                case 'merma':
                     self::aplicar($productoId, (int) $ubicacionOrigen, -$cantidad);
                     break;
                 case 'ajuste':
@@ -463,9 +489,7 @@ class Inventario
                     self::aplicar($productoId, (int) $ubicacionDestino, $cantidad);
                     break;
                 case 'migracion':
-                    if ($ubicacionDestino === null) {
-                        throw new InvalidArgumentException('Debes indicar la ubicacion de destino');
-                    }
+                    self::aplicar($productoId, (int) $ubicacionOrigen, -$cantidad);
                     self::aplicar($productoId, (int) $ubicacionDestino, $cantidad);
                     break;
             }

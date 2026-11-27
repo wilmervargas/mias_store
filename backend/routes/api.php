@@ -181,6 +181,10 @@ if ($metodo === 'PUT' && preg_match('#^(?:api/)?productos/([0-9]+)/presentacion$
     $ctrlProd->actualizarPresentacion((int) $m[1]);
     exit;
 }
+if ($metodo === 'POST' && preg_match('#^(?:api/)?productos/([0-9]+)/stock-inicial$#', $url, $m)) {
+    $ctrlProd->actualizarStockInicial((int) $m[1]);
+    exit;
+}
 if ($metodo === 'GET' && preg_match('#^(?:api/)?productos/([0-9]+)$#', $url, $m)) {
     $ctrlProd->mostrar((int) $m[1]);
     exit;

@@ -5,6 +5,7 @@ import Modal from '../ui/Modal';
 import Boton from '../ui/Boton';
 import Icono from '../ui/Icono';
 import { Campo, Input, Select } from '../ui/Campo';
+import { fmtNumero } from '../../utils/formato';
 
 const vacio = { sku: '', nombre: '', precio: '0.00', idestatus: 1, imagen: '' };
 const compVacio = () => ({ _key: `c-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, producto_id: '', cantidad: '1' });
@@ -15,12 +16,20 @@ export default function ModalCombo({ comboEditar, onClose, onGuardado }) {
   const [form, setForm] = useState(vacio);
   const [componentes, setComponentes] = useState([compVacio()]);
   const [productos, setProductos] = useState([]);
+  const [cargandoProductos, setCargandoProductos] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [imagenArchivo, setImagenArchivo] = useState(null);
   const [preview, setPreview] = useState(null);
 
   useEffect(() => {
-    api.get('combos/productos-disponibles').then((r) => setProductos(r.datos || []));
+    let activo = true;
+    setCargandoProductos(true);
+    api.get('combos/productos-disponibles').then((r) => {
+      if (!activo) return;
+      if (r.success) setProductos(r.datos || []);
+      else { console.error('productos-disponibles', r); setProductos([]); }
+    }).finally(() => { if (activo) setCargandoProductos(false); });
+    return () => { activo = false; };
   }, []);
 
   useEffect(() => {
@@ -93,9 +102,14 @@ export default function ModalCombo({ comboEditar, onClose, onGuardado }) {
         idestatus: Number(form.idestatus),
         componentes: comps,
       };
-      const res = editando ? await api.put(`combos/${comboEditar.id}`, payload) : await api.post('combos', payload);
-      if (!res.success) { alert(res.error || 'No se pudo guardar el combo'); return; }
-      const comboId = res.datos?.id || comboEditar?.id;
+      const res = editando ? await api.put('combos', comboEditar.id, payload) : await api.post('combos', payload);
+      if (!res?.success) {
+        console.error('Combo guardar error:', res);
+        const msg = Array.isArray(res?.error) ? res.error.join(', ') : (res?.error || 'No se pudo guardar el combo');
+        alert(msg);
+        return;
+      }
+      const comboId = res.datos?.id || res.datos?.combo?.id || comboEditar?.id;
 
       if (imagenArchivo && comboId) {
         const up = await api.subirImagen('combos', comboId, imagenArchivo);
@@ -104,6 +118,8 @@ export default function ModalCombo({ comboEditar, onClose, onGuardado }) {
 
       onGuardado?.();
       onClose();
+    } catch (err) {
+      alert(err?.message || 'Error al guardar el combo');
     } finally {
       setGuardando(false);
     }
@@ -177,6 +193,11 @@ export default function ModalCombo({ comboEditar, onClose, onGuardado }) {
             </div>
             <Boton type="button" variante="neutral" icono="mas" onClick={agregarComp}>Agregar</Boton>
           </div>
+          {!cargandoProductos && productos.length === 0 ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+              No hay presentaciones disponibles para agregar. Verifica que existan productos con presentaciones activas.
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             {componentes.map((c, idx) => {
@@ -197,7 +218,7 @@ export default function ModalCombo({ comboEditar, onClose, onGuardado }) {
                     <Input type="number" min="0.001" step="0.001" value={c.cantidad} onChange={(e) => setComp(c._key, 'cantidad', e.target.value)} />
                   </Campo>
                   <div className="text-[11px] text-gray-500 pb-2">
-                    {p ? <span>Stock: <b className="text-gray-800 dark:text-gray-200">{p.stock}</b></span> : <span>&nbsp;</span>}
+                    {p ? <span>Stock: <b className="text-gray-800 dark:text-gray-200">{fmtNumero(p.stock)}</b></span> : <span>&nbsp;</span>}
                   </div>
                   <div className="pb-1">
                     <Boton type="button" variante="peligro" tamano="sm" icono="papelera" onClick={() => quitarComp(c._key)} disabled={componentes.length === 1} aria-label="Quitar" />

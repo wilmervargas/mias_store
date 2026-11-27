@@ -7,6 +7,7 @@ import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Select } from '../ui/Campo';
 import { Tabla, Td, Th } from '../ui/Tabla';
 import { exportarExcel, exportarPDF } from '../../utils/reportes';
+import { fmtNumero } from '../../utils/formato';
 
 const COLOR_TIPO = {
   entrada: 'bg-emerald-500/10 text-emerald-400',
@@ -14,6 +15,7 @@ const COLOR_TIPO = {
   devolucion: 'bg-cyan-500/10 text-cyan-400',
   salida: 'bg-rose-500/10 text-rose-400',
   venta: 'bg-rose-500/10 text-rose-400',
+  merma: 'bg-orange-500/10 text-orange-400',
   ajuste: 'bg-amber-500/10 text-amber-400',
   transferencia: 'bg-blue-500/10 text-blue-400',
   migracion: 'bg-purple-500/10 text-purple-400',
@@ -72,8 +74,10 @@ const CrudMovimientos = () => {
       { header: 'ID', valor: (r) => r.id },
       { header: 'Fecha', valor: (r) => r.created_at || '' },
       { header: 'Tipo', valor: (r) => r.tipo || '' },
-      { header: 'Producto', valor: (r) => r.producto || '' },
+      { header: 'Código', valor: (r) => r.codigo_producto || r.sku_base || '' },
       { header: 'SKU', valor: (r) => r.sku_base || '' },
+      { header: 'Producto', valor: (r) => r.producto || '' },
+      { header: 'Descripción', valor: (r) => r.descripcion || '' },
       { header: 'Origen', valor: (r) => r.almacen_origen ? `${r.almacen_origen}${r.ubicacion_origen ? ' / ' + r.ubicacion_origen : ''}` : '' },
       { header: 'Destino', valor: (r) => r.almacen_destino ? `${r.almacen_destino}${r.ubicacion_destino ? ' / ' + r.ubicacion_destino : ''}` : '' },
       { header: 'Cantidad', valor: (r) => r.cantidad },
@@ -89,14 +93,14 @@ const CrudMovimientos = () => {
     if (filtros.desde) filtrosRep.push({ label: 'Desde', value: filtros.desde });
     if (filtros.hasta) filtrosRep.push({ label: 'Hasta', value: filtros.hasta });
     if (tipo === 'excel') exportarExcel({ nombre: 'reporte_movimientos', hoja: 'Movimientos', columnas: cols, filas: movimientos });
-    else exportarPDF({ nombre: 'reporte_movimientos', titulo: 'Reporte de Movimientos de Inventario', filtros: filtrosRep, columnas: cols, filas: movimientos });
+    else exportarPDF({ nombre: 'reporte_movimientos', titulo: 'Reporte de Movimientos (Kardex)', filtros: filtrosRep, columnas: cols, filas: movimientos });
   };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-black text-gray-900 dark:text-white">Movimientos de inventario</h2>
+          <h2 className="text-sm font-black text-gray-900 dark:text-white">Movimientos (Kardex)</h2>
           <p className="text-[11px] text-gray-500 mt-0.5">Auditoría completa de entradas, salidas y ajustes</p>
         </div>
         <div className="flex items-center gap-2">
@@ -132,7 +136,7 @@ const CrudMovimientos = () => {
           className="md:w-40"
         >
           <option value="">Todos los tipos</option>
-          {['entrada', 'salida', 'ajuste', 'transferencia', 'devolucion', 'venta', 'compra', 'migracion'].map((t) => (
+          {['entrada', 'salida', 'merma', 'ajuste', 'transferencia', 'devolucion', 'venta', 'compra', 'migracion'].map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </Select>
@@ -189,8 +193,12 @@ const CrudMovimientos = () => {
               </span>
             </Td>
             <Td className="max-w-xs">
-              <span className="block font-bold text-gray-900 dark:text-white truncate">{m.producto}</span>
-              <span className="block font-mono text-[10px] text-cyan-400">{m.sku_base}</span>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold">{m.codigo_producto || m.sku_base || '—'}</span>
+                <span className="font-bold text-gray-900 dark:text-white truncate">{m.producto}</span>
+              </div>
+              {m.descripcion ? <span className="block text-[10px] text-gray-500 truncate">{m.descripcion}</span> : null}
+              <span className="block font-mono text-[10px] text-gray-500">SKU: {m.sku_base || '—'}</span>
             </Td>
             <Td className="text-[10px] text-gray-400">
               {m.almacen_origen ? `${m.almacen_origen}${m.ubicacion_origen ? ' / ' + m.ubicacion_origen : ''}` : '—'}
@@ -198,7 +206,7 @@ const CrudMovimientos = () => {
             <Td className="text-[10px] text-gray-400">
               {m.almacen_destino ? `${m.almacen_destino}${m.ubicacion_destino ? ' / ' + m.ubicacion_destino : ''}` : '—'}
             </Td>
-            <Td align="right" className="font-bold text-gray-900 dark:text-white">{m.cantidad}</Td>
+            <Td align="right" className="font-bold text-gray-900 dark:text-white">{fmtNumero(m.cantidad)}</Td>
             <Td align="right" className="text-amber-400 font-mono">
               {m.costo_unitario !== null ? '$ ' + Number(m.costo_unitario).toFixed(2) : '—'}
             </Td>

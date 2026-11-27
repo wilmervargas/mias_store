@@ -1412,4 +1412,14 @@ class Producto
         $stmt->execute($params);
         return $stmt->fetchAll();
     }
+
+    /** Actualiza únicamente el stock_inicial de un producto (presentación). */
+    public static function actualizarStockInicial(int $id, int $stockInicial): bool
+    {
+        $stockInicial = max(0, $stockInicial);
+        $db = Database::conectar();
+        $stmt = $db->prepare("UPDATE productos SET stock_inicial = :si WHERE id = :id AND es_base = 0");
+        $stmt->execute([':si' => $stockInicial, ':id' => $id]);
+        return $stmt->rowCount() >= 0;
+    }
 }

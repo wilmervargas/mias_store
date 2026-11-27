@@ -20,13 +20,15 @@ class Combo
             $sql .= " AND (c.sku LIKE :q OR c.nombre LIKE :q)";
             $params[':q'] = '%' . trim((string) $filtros['q']) . '%';
         }
+        $estatusFiltro = null;
         if (isset($filtros['idestatus']) && $filtros['idestatus'] !== '') {
-            $sql .= " AND c.idestatus = :idestatus";
-            $params[':idestatus'] = (int) $filtros['idestatus'];
+            $estatusFiltro = (int) $filtros['idestatus'];
+        } elseif (isset($filtros['activo']) && $filtros['activo'] !== '') {
+            $estatusFiltro = ((int) $filtros['activo'] === 1) ? 1 : 2;
         }
-        if (isset($filtros['activo'])) {
+        if ($estatusFiltro !== null) {
             $sql .= " AND c.idestatus = :idestatus";
-            $params[':idestatus'] = ((int) $filtros['activo'] === 1) ? 1 : 2;
+            $params[':idestatus'] = $estatusFiltro;
         }
 
         $sql .= " ORDER BY c.nombre ASC, c.id DESC";

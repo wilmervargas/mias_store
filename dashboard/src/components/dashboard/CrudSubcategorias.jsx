@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { api } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useConfirm } from '../ui/ConfirmProvider';
@@ -12,7 +12,7 @@ import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const formVacio = { nombre: '', idcategoria: '' };
 
-const CrudSubcategorias = ({ embebido = false }) => {
+const CrudSubcategorias = forwardRef(({ embebido = false }, ref) => {
   const confirmar = useConfirm();
   const toast = useToast();
 
@@ -178,21 +178,23 @@ const CrudSubcategorias = ({ embebido = false }) => {
     else exportarPDF({ nombre: 'reporte_subcategorias', titulo: 'Reporte de Subcategorías', filtros: filtrosRep, columnas: cols, filas: subcategorias });
   };
 
+  useImperativeHandle(ref, () => ({ exportar, abrirCrear }), [exportar, abrirCrear]);
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {!embebido ? (
+      {!embebido ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-black text-gray-900 dark:text-white">Subcategorías</h2>
             <p className="text-[11px] text-gray-500 mt-0.5">Clasificación secundaria de productos dentro de cada categoría</p>
           </div>
-        ) : <div />}
-        <div className="flex items-center gap-2">
-          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
-          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
-          <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nueva Subcategoría</Boton>
+          <div className="flex items-center gap-2">
+            <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+            <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+            <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nueva Subcategoría</Boton>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <BarraFiltros total={subcategorias.length} etiqueta="subcategorías" onLimpiar={limpiar} puedeLimpiar={hayFiltros}>
         <Buscador
@@ -298,6 +300,6 @@ const CrudSubcategorias = ({ embebido = false }) => {
       )}
     </div>
   );
-};
+});
 
 export default CrudSubcategorias;

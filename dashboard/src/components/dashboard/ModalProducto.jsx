@@ -73,6 +73,9 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado, soloLectura = fals
   const [filas, setFilas] = useState(filasIniciales);
   const [filasEliminadas, setFilasEliminadas] = useState([]);
   const [ajuste, setAjuste] = useState(null); // { fila, tipo, concepto, cantidad, motivo, costo_unitario }
+  const [stockInicialEdit, setStockInicialEdit] = useState({ abierto: false, valor: '', password: '', guardando: false });
+  const [almacenesProducto, setAlmacenesProducto] = useState([]);
+  const [ubicacionesProducto, setUbicacionesProducto] = useState([]);
   const [guardandoAjuste, setGuardandoAjuste] = useState(false);
   const [categorias, setCategorias] = useState([]);
   const [subcategorias, setSubcategorias] = useState([]);
@@ -110,9 +113,8 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado, soloLectura = fals
 
   const cargarUbicaciones = async (almacenId) => {
     if (!almacenId) return;
-    if (ubicacionesPorAlmacen[almacenId]) return;
     const res = await api.get('ubicaciones', `almacen=${almacenId}`);
-    setUbicacionesPorAlmacen((prev) => ({ ...prev, [almacenId]: res.datos || [] }));
+    if (res.success) setUbicacionesPorAlmacen((prev) => ({ ...prev, [almacenId]: res.datos || [] }));
   };
 
   useEffect(() => {
@@ -123,6 +125,23 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado, soloLectura = fals
   useEffect(() => {
     if (ajuste?.almacen_id) cargarUbicaciones(ajuste.almacen_id);
   }, [ajuste?.almacen_id]);
+  useEffect(() => {
+    if (ajuste?.almacen_destino_id) cargarUbicaciones(ajuste.almacen_destino_id);
+  }, [ajuste?.almacen_destino_id]);
+
+  useEffect(() => {
+    if (!ajuste?.filaId) { setAlmacenesProducto([]); setUbicacionesProducto([]); return; }
+    Promise.all([
+      api.get(`inventario/producto/${ajuste.filaId}`),
+      api.get('inventario', `producto=${ajuste.filaId}`),
+    ]).then(([r1, r2]) => {
+      const desdeProducto = r1.success ? (r1.datos || []).map((a) => String(a.almacen_id)) : [];
+      const filasInv = r2.success ? (r2.datos || []) : [];
+      const desdeInv = filasInv.map((x) => String(x.almacen_id)).filter(Boolean);
+      setAlmacenesProducto([...new Set([...desdeProducto, ...desdeInv])]);
+      setUbicacionesProducto(filasInv.map((x) => String(x.ubicacion_id)).filter(Boolean));
+    });
+  }, [ajuste?.filaId]);
 
   useEffect(() => {
     if (!editando || !productoEditar?.id) { setImagenesExistentes([]); return; }
@@ -195,42 +214,119 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado, soloLectura = fals
     else alert(res.error || 'No se pudo eliminar la imagen');
   };
 
+  const guardarStockInicial = async () => {
+    if (!ajuste?.filaId) return;
+    const valor = Number(stockInicialEdit.valor);
+    if (!Number.isInteger(valor) || valor < 0) { alert('El stock inicial debe ser un entero mayor o igual a 0.'); return; }
+    if (!stockInicialEdit.password) { alert('Debes ingresar la contraseña del superusuario.'); return; }
+
+    const ok = await confirmar({
+      titulo: 'Modificar stock inicial',
+      mensaje: `Vas a cambiar únicamente el STOCK INICIAL de la presentación a ${valor}. Esta acción requiere contraseña de superusuario y no modifica el stock actual por movimientos. ¿Deseas continuar?`,
+      textoConfirmar: 'Sí, modificar',
+      variante: 'peligro',
+    });
+    if (!ok) return;
+
+    setStockInicialEdit((p) => ({ ...p, guardando: true }));
+    const res = await api.post(`productos/${ajuste.filaId}/stock-inicial`, {
+      stock_inicial: valor,
+      password: stockInicialEdit.password,
+    });
+    setStockInicialEdit((p) => ({ ...p, guardando: false }));
+    if (!res?.success) {
+      alert(res?.error || 'No se pudo actualizar el stock inicial.');
+      return;
+    }
+    setFilas((prev) => prev.map((f) => Number(f.id) === Number(ajuste.filaId) ? { ...f, stock_inicial: valor } : f));
+    setStockInicialEdit({ abierto: false, valor: '', password: '', guardando: false });
+    alert(res?.datos?.mensaje || 'Stock inicial actualizado correctamente.');
+  };
+
   const guardarAjuste = async () => {
     if (!ajuste?.filaId) return;
     const cantidad = Number(ajuste.cantidad);
     if (!Number.isFinite(cantidad) || cantidad <= 0) { alert('Indica una cantidad mayor a 0.'); return; }
     if (!ajuste.almacen_id) { alert('Selecciona el almacén.'); return; }
 
-    const esEntrada = ajuste.tipo === 'entrada';
+    const concepto = ajuste.concepto || 'otro';
+    const esTransferencia = ['transferencia', 'migracion'].includes(concepto);
+    if (esTransferencia && !ajuste.almacen_destino_id) { alert('Selecciona el almacén destino.'); return; }
+    if (esTransferencia) {
+      if (almacenesProducto.length > 0 && !almacenesProducto.includes(String(ajuste.almacen_destino_id))) {
+        alert('El almacén destino no está registrado para este producto.');
+        return;
+      }
+      if (String(ajuste.almacen_id) === String(ajuste.almacen_destino_id) && String(ajuste.ubicacion_id || '') === String(ajuste.ubicacion_destino_id || '')) {
+        alert('La ubicación de origen y destino no pueden ser la misma.');
+        return;
+      }
+    }
+
+    let tipoMov = ajuste.tipo === 'entrada' ? 'entrada' : 'salida';
+    if (ajuste.tipo === 'ajuste') tipoMov = 'ajuste';
+    if (concepto === 'devolucion') tipoMov = 'devolucion';
+    if (concepto === 'merma') tipoMov = 'merma';
+    if (concepto === 'transferencia') tipoMov = 'transferencia';
+    if (concepto === 'migracion') tipoMov = 'migracion';
+
+    const suma = ['entrada', 'devolucion', 'compra'].includes(tipoMov) || (tipoMov === 'ajuste');
+    const resta = ['salida', 'venta', 'merma'].includes(tipoMov);
+
     const ok = await confirmar({
       titulo: 'Registrar ajuste de inventario',
-      mensaje: `Este ajuste ${esEntrada ? 'sumará' : 'restará'} ${cantidad} unidad(es) al inventario de la presentación seleccionada. También actualizará el stock actual, generará un movimiento auditado y puede afectar reportes/disponibilidad. ¿Deseas continuar?`,
+      mensaje: `Se registrará un movimiento de tipo ${tipoMov.toUpperCase()} (${concepto}) por ${cantidad} unidad(es). Esto actualizará el stock y generará auditoría. ¿Deseas continuar?`,
       textoConfirmar: 'Sí, registrar ajuste',
       variante: 'peligro',
     });
     if (!ok) return;
+
     const payload = {
-      tipo: esEntrada ? 'entrada' : 'salida',
+      tipo: tipoMov,
       producto_id: Number(ajuste.filaId),
       cantidad,
-      concepto: ajuste.concepto,
-      motivo: ajuste.motivo || ajuste.concepto || '',
+      concepto,
+      motivo: ajuste.motivo || concepto || '',
       referencia: 'Ajuste manual',
-      ...(esEntrada
-        ? { almacen_destino_id: Number(ajuste.almacen_id), ubicacion_destino_id: ajuste.ubicacion_id ? Number(ajuste.ubicacion_id) : undefined }
-        : { almacen_origen_id: Number(ajuste.almacen_id), ubicacion_origen_id: ajuste.ubicacion_id ? Number(ajuste.ubicacion_id) : undefined }),
     };
+    if (['entrada', 'devolucion', 'ajuste'].includes(tipoMov)) {
+      payload.almacen_destino_id = Number(ajuste.almacen_id);
+      if (ajuste.ubicacion_id) payload.ubicacion_destino_id = Number(ajuste.ubicacion_id);
+    } else if (['salida', 'venta', 'merma'].includes(tipoMov)) {
+      payload.almacen_origen_id = Number(ajuste.almacen_id);
+      if (ajuste.ubicacion_id) payload.ubicacion_origen_id = Number(ajuste.ubicacion_id);
+    } else if (['transferencia', 'migracion'].includes(tipoMov)) {
+      payload.almacen_origen_id = Number(ajuste.almacen_id);
+      if (ajuste.ubicacion_id) payload.ubicacion_origen_id = Number(ajuste.ubicacion_id);
+      payload.almacen_destino_id = Number(ajuste.almacen_destino_id);
+      if (ajuste.ubicacion_destino_id) payload.ubicacion_destino_id = Number(ajuste.ubicacion_destino_id);
+    }
 
     setGuardandoAjuste(true);
     const res = await api.post('inventario/movimientos', payload);
     setGuardandoAjuste(false);
-    if (!res.success) { alert(res.message || 'No se pudo registrar el ajuste.'); return; }
+    if (!res.success) { alert(res.error || res.message || 'No se pudo registrar el ajuste.'); return; }
 
+    // Actualizar stock local
     setFilas((prev) => prev.map((f) => {
-      if (Number(f.id) !== Number(ajuste.filaId)) return f;
       const actual = Number(f.stock || 0);
-      const nuevo = esEntrada ? actual + cantidad : Math.max(0, actual - cantidad);
-      return { ...f, stock: nuevo };
+      const mismaFila = Number(f.id) === Number(ajuste.filaId);
+      const esOrigen = String(f.almacen_id) === String(ajuste.almacen_id) && String(f.ubicacion_id || '') === String(ajuste.ubicacion_id || '');
+      const esDestino = String(f.almacen_id) === String(ajuste.almacen_destino_id || '') && String(f.ubicacion_id || '') === String(ajuste.ubicacion_destino_id || '');
+
+      if (['entrada', 'devolucion'].includes(tipoMov)) {
+        if (mismaFila) return { ...f, stock: actual + cantidad };
+      } else if (['salida', 'merma'].includes(tipoMov)) {
+        if (mismaFila) return { ...f, stock: Math.max(0, actual - cantidad) };
+      } else if (tipoMov === 'ajuste') {
+        if (mismaFila) return { ...f, stock: cantidad };
+      } else if (['transferencia', 'migracion'].includes(tipoMov)) {
+        if (esOrigen) return { ...f, stock: Math.max(0, actual - cantidad) };
+        if (esDestino) return { ...f, stock: actual + cantidad };
+        // fallback: si la fila seleccionada es origen por id
+        if (mismaFila && esOrigen) return { ...f, stock: Math.max(0, actual - cantidad) };
+      }
+      return f;
     }));
     setAjuste(null);
   };
@@ -475,7 +571,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado, soloLectura = fals
                     {!soloLectura && (
                       <div className="flex items-center gap-2">
                         {editando && fila.id && (
-                          <Boton type="button" variante="neutral" tamano="sm" icono="ajustes" onClick={() => setAjuste({ filaId: fila.id, almacen_id: fila.almacen_id, ubicacion_id: fila.ubicacion_id, tipo: 'entrada', concepto: 'compra', cantidad: 1, motivo: '' })}>
+                          <Boton type="button" variante="neutral" tamano="sm" icono="ajustes" onClick={() => setAjuste({ filaId: fila.id, almacen_id: fila.almacen_id, ubicacion_id: fila.ubicacion_id || '', almacen_destino_id: '', ubicacion_destino_id: '', tipo: 'entrada', concepto: 'compra', cantidad: 1, motivo: '' })}>
                             Ajustes
                           </Boton>
                         )}
@@ -570,10 +666,12 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado, soloLectura = fals
               <Campo label="Tipo" required>
                 <Select value={ajuste.tipo} onChange={(e) => {
                   const tipo = e.target.value;
-                  setAjuste((p) => ({ ...p, tipo, concepto: tipo === 'entrada' ? 'compra' : 'venta' }));
+                  const concepto = tipo === 'entrada' ? 'compra' : tipo === 'salida' ? 'venta' : tipo === 'ajuste' ? 'ajuste' : 'otro';
+                  setAjuste((p) => ({ ...p, tipo, concepto }));
                 }}>
                   <option value="entrada">Entrada</option>
                   <option value="salida">Salida</option>
+                  <option value="ajuste">Ajuste</option>
                 </Select>
               </Campo>
               <Campo label="Concepto" required>
@@ -581,41 +679,92 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado, soloLectura = fals
                   {ajuste.tipo === 'entrada' ? (
                     <>
                       <option value="compra">Compra</option>
+                      <option value="devolucion">Devolución</option>
                       <option value="otro">Otro</option>
                     </>
-                  ) : (
+                  ) : ajuste.tipo === 'salida' ? (
                     <>
                       <option value="venta">Venta</option>
+                      <option value="transferencia">Transferencia</option>
+                      <option value="migracion">Migración</option>
+                      <option value="merma">Merma</option>
                       <option value="danado">Dañado</option>
                       <option value="extravio">Extravío</option>
                       <option value="robo">Robo</option>
                       <option value="otro">Otro</option>
                     </>
+                  ) : (
+                    <>
+                      <option value="ajuste">Ajuste de inventario</option>
+                      <option value="conteo">Conteo físico</option>
+                    </>
                   )}
                 </Select>
               </Campo>
-              <Campo label="Almacén" required>
+              <Campo label={['transferencia','migracion'].includes(ajuste.concepto) ? 'Almacén origen' : 'Almacén'} required>
                 <Select value={ajuste.almacen_id} onChange={(e) => { setAjuste((p) => ({ ...p, almacen_id: e.target.value, ubicacion_id: '' })); }}>
                   <option value="">Selecciona...</option>
                   {almacenes.map((a) => <option key={a.id} value={a.id}>{a.codigo} - {a.nombre}</option>)}
                 </Select>
               </Campo>
-              <Campo label="Ubicación">
+              <Campo label={['transferencia','migracion'].includes(ajuste.concepto) ? 'Ubicación origen' : 'Ubicación'}>
                 <Select value={ajuste.ubicacion_id} onChange={(e) => setAjuste((p) => ({ ...p, ubicacion_id: e.target.value }))}>
                   <option value="">Automática</option>
                   {(ubicacionesPorAlmacen[ajuste.almacen_id] || []).map((u) => <option key={u.id} value={u.id}>{u.codigo}</option>)}
                 </Select>
               </Campo>
-              <Campo label="Cantidad" required>
+              {['transferencia','migracion'].includes(ajuste.concepto) && (
+                <>
+                  <Campo label="Almacén destino" required>
+                    <Select value={ajuste.almacen_destino_id || ''} onChange={(e) => { setAjuste((p) => ({ ...p, almacen_destino_id: e.target.value, ubicacion_destino_id: '' })); }}>
+                      <option value="">Selecciona...</option>
+                      {almacenes
+                        .filter((a) => almacenesProducto.length === 0 || almacenesProducto.includes(String(a.id)))
+                        .map((a) => <option key={a.id} value={a.id}>{a.codigo} - {a.nombre}</option>)}
+                    </Select>
+                  </Campo>
+                  <Campo label="Ubicación destino">
+                    <Select value={ajuste.ubicacion_destino_id || ''} onChange={(e) => setAjuste((p) => ({ ...p, ubicacion_destino_id: e.target.value }))}>
+                      <option value="">Automática</option>
+                      {(ubicacionesPorAlmacen[ajuste.almacen_destino_id] || []).map((u) => <option key={u.id} value={u.id}>{u.codigo}</option>)}
+                    </Select>
+                  </Campo>
+                </>
+              )}
+              <Campo label={ajuste.tipo === "ajuste" ? "Nueva cantidad" : "Cantidad"} required>
                 <Input type="number" min="1" value={ajuste.cantidad} onChange={(e) => setAjuste((p) => ({ ...p, cantidad: e.target.value }))} />
               </Campo>
             </div>
             <Campo label="Motivo">
               <Input value={ajuste.motivo} onChange={(e) => setAjuste((p) => ({ ...p, motivo: e.target.value }))} placeholder="Detalle del ajuste" />
             </Campo>
-            <div className="flex justify-end gap-2">
-              <Boton type="button" variante="neutral" onClick={() => setAjuste(null)}>Cancelar</Boton>
-              <Boton type="button" variante="primario" onClick={guardarAjuste} disabled={guardandoAjuste}>{guardandoAjuste ? 'Guardando...' : 'Registrar ajuste'}</Boton>
+
+            {stockInicialEdit.abierto && (
+              <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 space-y-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+                <p className="text-[11px] font-bold text-amber-800 dark:text-amber-200">Modificar únicamente STOCK INICIAL (requiere contraseña de superusuario)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Campo label="Nuevo stock inicial" required>
+                    <Input type="number" min="0" step="1" value={stockInicialEdit.valor} onChange={(e) => setStockInicialEdit((p) => ({ ...p, valor: e.target.value }))} />
+                  </Campo>
+                  <Campo label="Contraseña superusuario" required>
+                    <Input type="password" value={stockInicialEdit.password} onChange={(e) => setStockInicialEdit((p) => ({ ...p, password: e.target.value }))} placeholder="Contraseña" />
+                  </Campo>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Boton type="button" variante="neutral" tamano="sm" onClick={() => setStockInicialEdit({ abierto: false, valor: '', password: '', guardando: false })}>Cancelar</Boton>
+                  <Boton type="button" variante="peligro" tamano="sm" onClick={guardarStockInicial} disabled={stockInicialEdit.guardando}>{stockInicialEdit.guardando ? 'Validando...' : 'Guardar stock inicial'}</Boton>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Boton type="button" variante="advertencia" tamano="sm" onClick={() => setStockInicialEdit((p) => ({ ...p, abierto: !p.abierto, valor: p.abierto ? '' : String((filas.find(f => Number(f.id) === Number(ajuste.filaId))?.stock_inicial) ?? ''), password: '' }))}>
+                Modificar stock inicial
+              </Boton>
+              <div className="flex items-center gap-2">
+                <Boton type="button" variante="neutral" onClick={() => { setAjuste(null); setStockInicialEdit({ abierto: false, valor: '', password: '', guardando: false }); }}>Cancelar</Boton>
+                <Boton type="button" variante="primario" onClick={guardarAjuste} disabled={guardandoAjuste}>{guardandoAjuste ? 'Guardando...' : 'Registrar ajuste'}</Boton>
+              </div>
             </div>
           </div>
         </div>

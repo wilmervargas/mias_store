@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useConfirm } from '../ui/ConfirmProvider';
@@ -10,14 +10,16 @@ import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
 import { Acciones, Tabla, Td, Th } from '../ui/Tabla';
 import { exportarExcel, exportarPDF } from '../../utils/reportes';
+import { fmtNumero } from '../../utils/formato';
 
 const TIPOS = [
   { id: 'entrada', label: 'Entrada', signo: '+' },
-  { id: 'salida', label: 'Salida', signo: '−' },
+  { id: 'salida', label: 'Salida', signo: '-' },
+  { id: 'merma', label: 'Merma', signo: '-' },
   { id: 'ajuste', label: 'Ajuste (fija cantidad)', signo: '=' },
-  { id: 'transferencia', label: 'Transferencia', signo: '⇄' },
+  { id: 'transferencia', label: 'Transferencia', signo: '<->' },
   { id: 'compra', label: 'Compra', signo: '+' },
-  { id: 'venta', label: 'Venta', signo: '−' },
+  { id: 'venta', label: 'Venta', signo: '-' },
   { id: 'devolucion', label: 'Devolución', signo: '+' },
 ];
 
@@ -213,7 +215,7 @@ const CrudInventario = () => {
       textoConfirmar: 'Sí, eliminar',
       detalle: [
         `SKU: ${item.sku_base || '—'}`,
-        `Cantidad actual: ${item.cantidad}`,
+        `Cantidad actual: ${fmtNumero(item.cantidad)}`,
         'El stock del producto se recalculará automáticamente.',
       ],
     });
@@ -232,12 +234,17 @@ const CrudInventario = () => {
 
   const exportar = (tipo) => {
     const cols = [
-      { header: 'Producto', valor: (r) => r.producto },
-      { header: 'SKU', valor: (r) => r.sku_base },
-      { header: 'Almacén', valor: (r) => r.almacen_codigo },
-      { header: 'Ubicación', valor: (r) => r.ruta },
-      { header: 'Tipo', valor: (r) => r.tipo_ubicacion },
+      { header: 'Código', valor: (r) => r.codigo_producto || r.sku_base || '' },
+      { header: 'SKU', valor: (r) => r.sku_base || '' },
+      { header: 'Producto', valor: (r) => r.producto || '' },
+      { header: 'Descripción', valor: (r) => r.descripcion || '' },
+      { header: 'Categoría', valor: (r) => r.categoria || '' },
+      { header: 'Marca', valor: (r) => r.marca || '' },
+      { header: 'Almacén', valor: (r) => r.almacen_codigo || '' },
+      { header: 'Ubicación', valor: (r) => r.ruta || '' },
+      { header: 'Tipo', valor: (r) => r.tipo_ubicacion || '' },
       { header: 'Cantidad', valor: (r) => r.cantidad },
+      { header: 'Stock total', valor: (r) => r.stock_total ?? '' },
     ];
     const filtrosRep = [];
     if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
@@ -248,6 +255,14 @@ const CrudInventario = () => {
   };
 
   const tipoActual = TIPOS.find((t) => t.id === form.tipo);
+
+  const grupos = inventario.reduce((acc, item) => {
+    const key = String(item.producto_id);
+    if (!acc[key]) acc[key] = { key, producto_id: item.producto_id, producto: item.producto, sku_base: item.sku_base, codigo_producto: item.codigo_producto, descripcion: item.descripcion, categoria: item.categoria, marca: item.marca, unidad: item.unidad, stock_total: item.stock_total, costo: item.costo, precio: item.precio, filas: [] };
+    acc[key].filas.push(item);
+    return acc;
+  }, {});
+  const gruposArr = Object.values(grupos);
 
   return (
     <div className="space-y-4">
@@ -295,38 +310,55 @@ const CrudInventario = () => {
       </BarraFiltros>
 
       <Tabla
-        colSpan={7}
+        colSpan={6}
         cargando={cargando}
         vacio={inventario.length === 0}
         textoVacio="Sin registros de inventario para los filtros seleccionados."
         cabecera={
           <>
-            <Th>Producto</Th>
-            <Th>SKU</Th>
             <Th>Almacén</Th>
             <Th>Ubicación</Th>
             <Th>Tipo</Th>
+            <Th>Lote / Venc.</Th>
             <Th align="right">Cantidad</Th>
             <Th align="center">Acciones</Th>
           </>
         }
       >
-        {inventario.map((item) => (
-          <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
-            <Td className="font-bold text-gray-900 dark:text-white max-w-xs truncate">{item.producto}</Td>
-            <Td className="font-mono text-[10px] text-cyan-400">{item.sku_base}</Td>
-            <Td className="text-gray-300">{item.almacen_codigo}</Td>
-            <Td className="font-mono text-[10px] text-gray-400">{item.ruta}</Td>
-            <Td className="text-gray-400">{item.tipo_ubicacion}</Td>
-            <Td align="right" className={`font-bold ${Number(item.cantidad) === 0 ? 'text-rose-400' : 'text-white'}`}>
-              {item.cantidad}
-            </Td>
-            <Td align="center"><Acciones>
-                <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(item)} title="Editar" aria-label="Editar"></Boton>
-                <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminarRegistro(item)} title="Eliminar" aria-label="Eliminar"></Boton>
-              </Acciones>
-            </Td>
-          </tr>
+        {gruposArr.map((g) => (
+          <React.Fragment key={`g-${g.key}`}>
+            <tr className="bg-gray-100/80 dark:bg-gray-800/60 border-y border-gray-200 dark:border-gray-700">
+              <td colSpan={6} className="px-3 py-2">
+                <div className="flex items-center gap-3 text-[10px] whitespace-nowrap overflow-x-auto">
+                  <span className="font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold shrink-0">{g.codigo_producto || g.sku_base || '—'}</span>
+                  <span className="font-black text-xs text-gray-900 dark:text-white shrink-0">{g.producto}</span>
+                  {g.descripcion ? <span className="text-gray-500 truncate max-w-[280px] shrink" title={g.descripcion}>{g.descripcion}</span> : null}
+                  {g.sku_base ? <span className="text-gray-500 shrink-0">SKU: <b className="text-gray-700 dark:text-gray-300 font-mono">{g.sku_base}</b></span> : null}
+                  {g.categoria ? <span className="text-gray-500 shrink-0">Cat: <b className="text-gray-700 dark:text-gray-300">{g.categoria}</b></span> : null}
+                  {g.marca ? <span className="text-gray-500 shrink-0">Marca: <b className="text-gray-700 dark:text-gray-300">{g.marca}</b></span> : null}
+                  {g.unidad ? <span className="text-gray-500 shrink-0">Und: <b className="text-gray-700 dark:text-gray-300">{g.unidad}</b></span> : null}
+                  <span className="text-gray-500 shrink-0">Stock: <b className="text-gray-900 dark:text-white text-xs">{fmtNumero(g.stock_total)}</b></span>
+                  {g.precio != null && g.precio !== '' ? <span className="text-gray-500 shrink-0">Precio: <b className="text-gray-900 dark:text-white">${fmtNumero(g.precio)}</b></span> : null}
+                </div>
+              </td>
+            </tr>
+            {g.filas.map((item) => (
+              <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                <Td className="text-gray-300">{item.almacen_codigo} {item.almacen ? <span className="text-gray-500 text-[10px]">{item.almacen}</span> : null}</Td>
+                <Td className="font-mono text-[10px] text-gray-400">{item.ruta || item.ubicacion_codigo || '—'}</Td>
+                <Td className="text-gray-400">{item.tipo_ubicacion || '—'}</Td>
+                <Td className="text-[10px] text-gray-500">{item.lote || '—'}{item.fecha_vencimiento ? ` / ${item.fecha_vencimiento}` : ''}</Td>
+                <Td align="right" className={`font-bold ${Number(item.cantidad) === 0 ? 'text-rose-400' : 'text-white'}`}>
+                  {fmtNumero(item.cantidad)}
+                </Td>
+                <Td align="center"><Acciones>
+                    <Boton tamano="sm" variante="neutral" icono="editar" onClick={() => abrirEditar(item)} title="Editar" aria-label="Editar"></Boton>
+                    <Boton tamano="sm" variante="peligro" icono="papelera" onClick={() => eliminarRegistro(item)} title="Eliminar" aria-label="Eliminar"></Boton>
+                  </Acciones>
+                </Td>
+              </tr>
+            ))}
+          </React.Fragment>
         ))}
       </Tabla>
 

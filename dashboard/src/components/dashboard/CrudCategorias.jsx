@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { api } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useConfirm } from '../ui/ConfirmProvider';
@@ -12,7 +12,7 @@ import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const formVacio = { nombre: '', descripcion: '' };
 
-const CrudCategorias = ({ embebido = false }) => {
+const CrudCategorias = forwardRef(({ embebido = false }, ref) => {
   const confirmar = useConfirm();
   const toast = useToast();
 
@@ -173,21 +173,23 @@ const CrudCategorias = ({ embebido = false }) => {
     else exportarPDF({ nombre: 'reporte_categorias', titulo: 'Reporte de Categorías', filtros: filtrosRep, columnas: cols, filas: categorias });
   };
 
+  useImperativeHandle(ref, () => ({ exportar, abrirCrear }), [exportar, abrirCrear]);
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        {!embebido ? (
+      {!embebido ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-sm font-black text-gray-900 dark:text-white">Categorías</h2>
-            <p className="text-[11px] text-gray-500 mt-0.5">Clasificación principal de los productos</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Gestiona las categorías para clasificar tus productos</p>
           </div>
-        ) : <div />}
-        <div className="flex items-center gap-2">
-          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
-          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
-          <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nueva Categoría</Boton>
+          <div className="flex items-center gap-2">
+            <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+            <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+            <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nueva Categoría</Boton>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <BarraFiltros
         total={categorias.length}
@@ -308,6 +310,6 @@ const CrudCategorias = ({ embebido = false }) => {
       )}
     </div>
   );
-};
+});
 
 export default CrudCategorias;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import { useConfirm } from '../ui/ConfirmProvider';
@@ -33,7 +33,7 @@ const CrudCatalogos = ({ tabFijo = null }) => {
   const confirmar = useConfirm();
   const toast = useToast();
 
-  const [tab, setTab] = useState(tabFijo || 'modelos');
+  const [tab, setTab] = useState(tabFijo || 'marcas');
   const [items, setItems] = useState([]);
   const [marcas, setMarcas] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -42,15 +42,20 @@ const CrudCatalogos = ({ tabFijo = null }) => {
   const [editando, setEditando] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const marcasRef = useRef(null);
 
   const qDebounced = useDebounce(filtros.q);
   const tabActual = TABS.find((t) => t.id === tab) || TABS[0];
   // "Unidades" es un modulo principal del menu; no se muestra como pestaña aqui.
   const tabsVisibles = TABS.filter((t) => t.id !== 'unidades');
 
-  useEffect(() => {
-    api.get('marcas').then((r) => setMarcas(r.datos || []));
+  const cargarMarcas = useCallback(async () => {
+    const res = await api.get('marcas');
+    if (res.success) setMarcas(res.datos || []);
   }, []);
+
+  useEffect(() => { cargarMarcas(); }, [cargarMarcas]);
+  useEffect(() => { if (tab === 'modelos') cargarMarcas(); }, [tab, cargarMarcas]);
 
   const cargar = useCallback(async () => {
     if (tab === 'marcas') { setCargando(false); return; }
@@ -244,13 +249,13 @@ const CrudCatalogos = ({ tabFijo = null }) => {
               : 'Marcas, modelos, colores y tallas de los productos'}
           </p>
         </div>
-        {tab !== 'marcas' ? (
-          <div className="flex items-center gap-2">
-            <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
-            <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
-            <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nuevo {tabActual.singular}</Boton>
-          </div>
-        ) : <div />}
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => tab === 'marcas' ? marcasRef.current?.exportar('excel') : exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => tab === 'marcas' ? marcasRef.current?.exportar('pdf') : exportar('pdf')}>PDF</Boton>
+          <Boton variante="primario" icono="mas" onClick={() => tab === 'marcas' ? marcasRef.current?.abrirCrear() : abrirCrear()}>
+            {tab === 'marcas' ? 'Nueva Marca' : `Nuevo ${tabActual.singular}`}
+          </Boton>
+        </div>
       </div>
 
       {!tabFijo && (
@@ -274,7 +279,7 @@ const CrudCatalogos = ({ tabFijo = null }) => {
       )}
 
       {tab === 'marcas' ? (
-        <CrudMarcas embebido />
+        <CrudMarcas ref={marcasRef} embebido />
       ) : (
         <>
       <BarraFiltros

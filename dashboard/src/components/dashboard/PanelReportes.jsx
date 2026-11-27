@@ -4,6 +4,7 @@ import Boton from '../ui/Boton';
 import { Card, CardBody, CardHeader } from '../ui/Card';
 import PageHeader from '../ui/PageHeader';
 import { Campo, Input } from '../ui/Campo';
+import { fmtNumero, fmtMoneda } from '../../utils/formato';
 
 const PanelReportes = () => {
   const [resumen, setResumen] = useState(null);
@@ -144,7 +145,7 @@ const PanelReportes = () => {
                   <td className="p-3.5 text-gray-600 dark:text-gray-400">{p.color} / {p.talla}</td>
                   <td className="p-3.5 text-gray-600 dark:text-gray-400">{p.categoria}</td>
                   <td className="p-3.5 text-gray-600 dark:text-gray-400">{p.marca}</td>
-                  <td className="p-3.5 text-right font-bold text-rose-600 dark:text-rose-400">{p.stock} u.</td>
+                  <td className="p-3.5 text-right font-bold text-rose-600 dark:text-rose-400">{fmtNumero(p.stock)} u.</td>
                 </tr>
               ))}
               {criticos.length === 0 && (
@@ -199,7 +200,7 @@ const PanelReportes = () => {
                   <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-50 dark:hover:bg-gray-800/40">
                     <td className="p-3.5 font-mono text-[10px] text-cyan-600 dark:text-cyan-400">{p.sku_base}</td>
                     <td className="p-3.5 font-bold text-gray-900 dark:text-white max-w-[220px] truncate">{p.nombre}</td>
-                    <td className="p-3.5 text-right text-gray-700 dark:text-gray-300">{p.stock}</td>
+                    <td className="p-3.5 text-right text-gray-700 dark:text-gray-300">{fmtNumero(p.stock)}</td>
                     <td className="p-3.5 text-right text-amber-600 dark:text-amber-400">$ {formato(p.valor_costo)}</td>
                   </tr>
                 ))}

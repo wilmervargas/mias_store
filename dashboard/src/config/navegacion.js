@@ -31,7 +31,7 @@ export const GRUPOS_MENU = [
     items: [
       { id: 'productos', label: 'Productos y combos', icono: 'producto', hint: 'SKUs, variantes y combos' },
       { id: 'inventario', label: 'Inventario', icono: 'inventario', hint: 'Stock por ubicación' },
-      { id: 'movimientos', label: 'Movimientos', icono: 'movimiento', hint: 'Entradas, salidas y ajustes' },
+      { id: 'movimientos', label: 'Movimientos/Kardex', icono: 'movimiento', hint: 'Entradas, salidas y ajustes' },
     ],
   },
   {
