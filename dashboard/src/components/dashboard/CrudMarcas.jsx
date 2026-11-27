@@ -8,10 +8,11 @@ import Modal from '../ui/Modal';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const formVacio = { nombre: '' };
 
-const CrudMarcas = () => {
+const CrudMarcas = ({ embebido = false }) => {
   const confirmar = useConfirm();
   const toast = useToast();
 
@@ -152,16 +153,35 @@ const CrudMarcas = () => {
   const limpiar = () => setFiltros({ q: '', estatus: '' });
   const hayFiltros = filtros.q !== '' || filtros.estatus !== '';
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'ID', valor: (r) => r.id },
+      { header: 'Nombre', valor: (r) => r.nombre },
+      { header: 'Modelos', valor: (r) => r.total_modelos ?? 0 },
+      { header: 'Productos', valor: (r) => r.total_productos ?? 0 },
+      { header: 'Estatus', valor: (r) => Number(r.idestatus) === 1 ? 'Activo' : 'Inactivo' },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.estatus !== '') filtrosRep.push({ label: 'Estatus', value: filtros.estatus === '1' ? 'Activo' : 'Inactivo' });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_marcas', hoja: 'Marcas', columnas: cols, filas: marcas });
+    else exportarPDF({ nombre: 'reporte_marcas', titulo: 'Reporte de Marcas', filtros: filtrosRep, columnas: cols, filas: marcas });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-black text-gray-900 dark:text-white">Marcas</h2>
-          <p className="text-[11px] text-gray-500 mt-0.5">Catálogo comercial de la tienda</p>
+        {!embebido ? (
+          <div>
+            <h2 className="text-sm font-black text-gray-900 dark:text-white">Marcas</h2>
+            <p className="text-[11px] text-gray-500 mt-0.5">Catálogo comercial de la tienda</p>
+          </div>
+        ) : <div />}
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nueva Marca</Boton>
         </div>
-        <Boton variante="primario" icono="mas" onClick={abrirCrear}>
-          Nueva Marca
-        </Boton>
       </div>
 
       <BarraFiltros

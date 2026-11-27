@@ -8,10 +8,11 @@ import Modal from '../ui/Modal';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const formVacio = { nombre: '', idcategoria: '' };
 
-const CrudSubcategorias = () => {
+const CrudSubcategorias = ({ embebido = false }) => {
   const confirmar = useConfirm();
   const toast = useToast();
 
@@ -161,16 +162,36 @@ const CrudSubcategorias = () => {
   const limpiar = () => setFiltros({ q: '', idcategoria: '', estatus: '' });
   const hayFiltros = filtros.q !== '' || filtros.idcategoria !== '' || filtros.estatus !== '';
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'ID', valor: (r) => r.id },
+      { header: 'Nombre', valor: (r) => r.nombre },
+      { header: 'Categoría', valor: (r) => r.categoria_nombre || r.categoria || '' },
+      { header: 'Productos', valor: (r) => r.total_productos ?? '' },
+      { header: 'Estatus', valor: (r) => Number(r.idestatus) === 1 ? 'Activo' : 'Inactivo' },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.idcategoria) filtrosRep.push({ label: 'Categoría', value: categorias.find((c) => String(c.id) === String(filtros.idcategoria))?.nombre || filtros.idcategoria });
+    if (filtros.estatus !== '') filtrosRep.push({ label: 'Estatus', value: filtros.estatus === '1' ? 'Activo' : 'Inactivo' });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_subcategorias', hoja: 'Subcategorías', columnas: cols, filas: subcategorias });
+    else exportarPDF({ nombre: 'reporte_subcategorias', titulo: 'Reporte de Subcategorías', filtros: filtrosRep, columnas: cols, filas: subcategorias });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-black text-gray-900 dark:text-white">Subcategorías</h2>
-          <p className="text-[11px] text-gray-500 mt-0.5">Clasificación secundaria de productos dentro de cada categoría</p>
+        {!embebido ? (
+          <div>
+            <h2 className="text-sm font-black text-gray-900 dark:text-white">Subcategorías</h2>
+            <p className="text-[11px] text-gray-500 mt-0.5">Clasificación secundaria de productos dentro de cada categoría</p>
+          </div>
+        ) : <div />}
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nueva Subcategoría</Boton>
         </div>
-        <Boton variante="primario" icono="mas" onClick={abrirCrear}>
-          Nueva Subcategoría
-        </Boton>
       </div>
 
       <BarraFiltros total={subcategorias.length} etiqueta="subcategorías" onLimpiar={limpiar} puedeLimpiar={hayFiltros}>

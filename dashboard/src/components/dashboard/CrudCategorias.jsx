@@ -8,10 +8,11 @@ import Modal from '../ui/Modal';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select, TextArea } from '../ui/Campo';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const formVacio = { nombre: '', descripcion: '' };
 
-const CrudCategorias = () => {
+const CrudCategorias = ({ embebido = false }) => {
   const confirmar = useConfirm();
   const toast = useToast();
 
@@ -156,16 +157,36 @@ const CrudCategorias = () => {
   const limpiar = () => setFiltros({ q: '', estatus: '' });
   const hayFiltros = filtros.q !== '' || filtros.estatus !== '';
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'ID', valor: (r) => r.id },
+      { header: 'Nombre', valor: (r) => r.nombre },
+      { header: 'Descripción', valor: (r) => r.descripcion || '' },
+      { header: 'Subcategorías', valor: (r) => r.total_subcategorias ?? '' },
+      { header: 'Productos', valor: (r) => r.total_productos ?? '' },
+      { header: 'Estatus', valor: (r) => Number(r.idestatus) === 1 ? 'Activo' : 'Inactivo' },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.estatus !== '') filtrosRep.push({ label: 'Estatus', value: filtros.estatus === '1' ? 'Activo' : 'Inactivo' });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_categorias', hoja: 'Categorías', columnas: cols, filas: categorias });
+    else exportarPDF({ nombre: 'reporte_categorias', titulo: 'Reporte de Categorías', filtros: filtrosRep, columnas: cols, filas: categorias });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-black text-gray-900 dark:text-white">Categorías</h2>
-          <p className="text-[11px] text-gray-500 mt-0.5">Clasificación principal de los productos</p>
+        {!embebido ? (
+          <div>
+            <h2 className="text-sm font-black text-gray-900 dark:text-white">Categorías</h2>
+            <p className="text-[11px] text-gray-500 mt-0.5">Clasificación principal de los productos</p>
+          </div>
+        ) : <div />}
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nueva Categoría</Boton>
         </div>
-        <Boton variante="primario" icono="mas" onClick={abrirCrear}>
-          Nueva Categoría
-        </Boton>
       </div>
 
       <BarraFiltros

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-11-2026 a las 20:21:18
+-- Tiempo de generación: 27-11-2026 a las 17:03:45
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -180,6 +180,58 @@ INSERT INTO `colores` (`id`, `nombre`, `codigo_hex`, `idestatus`, `created_at`) 
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `combos`
+--
+
+CREATE TABLE `combos` (
+  `id` int(11) NOT NULL,
+  `idestatus` int(11) NOT NULL DEFAULT 1,
+  `sku` varchar(64) NOT NULL,
+  `nombre` varchar(150) NOT NULL,
+  `precio` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `imagen` varchar(150) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `combos`
+--
+
+INSERT INTO `combos` (`id`, `idestatus`, `sku`, `nombre`, `precio`, `imagen`, `created_at`, `updated_at`) VALUES
+(1, 1, 'COMBO-COMBO-01-155028', 'COMBO 01', 35.00, NULL, '2026-11-27 15:50:28', '2026-11-27 15:50:28'),
+(2, 1, 'COMBO-DWERWERWERQWERQWEQRQ-155054', 'DWERWERWERQWERQWEQRQWE', 10.00, 'combo_2_8f82eb90.jpg', '2026-11-27 15:50:54', '2026-11-27 15:50:54'),
+(3, 1, 'COMBO-FGHFGH-155218', 'fghfgh', 12.00, 'combo_3_48155ce8.jpg', '2026-11-27 15:52:18', '2026-11-27 15:52:18');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `combo_detalle`
+--
+
+CREATE TABLE `combo_detalle` (
+  `id` int(11) NOT NULL,
+  `combo_id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `cantidad` decimal(12,3) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `combo_detalle`
+--
+
+INSERT INTO `combo_detalle` (`id`, `combo_id`, `producto_id`, `cantidad`, `created_at`, `updated_at`) VALUES
+(1, 1, 453, 1.000, '2026-11-27 15:50:28', '2026-11-27 15:50:28'),
+(2, 1, 454, 1.000, '2026-11-27 15:50:28', '2026-11-27 15:50:28'),
+(3, 1, 456, 1.000, '2026-11-27 15:50:28', '2026-11-27 15:50:28'),
+(4, 2, 453, 1.000, '2026-11-27 15:50:54', '2026-11-27 15:50:54'),
+(5, 3, 453, 1.000, '2026-11-27 15:52:18', '2026-11-27 15:52:18');
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `dolar`
 --
 
@@ -197,6 +249,38 @@ INSERT INTO `dolar` (`id`, `fecha`, `monto`) VALUES
 (1, '2025-11-26', 243.57),
 (2, '2023-03-19', 607.39),
 (3, '2026-07-02', 639.00);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `empresa`
+--
+
+CREATE TABLE `empresa` (
+  `id` int(11) NOT NULL DEFAULT 1,
+  `razon_social` varchar(200) NOT NULL DEFAULT '',
+  `nombre_comercial` varchar(200) NOT NULL DEFAULT '',
+  `rif` varchar(30) NOT NULL DEFAULT '',
+  `representante` varchar(150) NOT NULL DEFAULT '',
+  `direccion` text DEFAULT NULL,
+  `telefono` varchar(30) NOT NULL DEFAULT '',
+  `telefonos` text DEFAULT NULL,
+  `email` varchar(190) NOT NULL DEFAULT '',
+  `eslogan` varchar(200) NOT NULL DEFAULT '',
+  `logo` varchar(255) NOT NULL DEFAULT '',
+  `moneda_base` varchar(3) NOT NULL DEFAULT 'USD',
+  `iva_rate` decimal(5,2) NOT NULL DEFAULT 16.00,
+  `igtf_rate` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `empresa`
+--
+
+INSERT INTO `empresa` (`id`, `razon_social`, `nombre_comercial`, `rif`, `representante`, `direccion`, `telefono`, `telefonos`, `email`, `eslogan`, `logo`, `moneda_base`, `iva_rate`, `igtf_rate`, `created_at`, `updated_at`) VALUES
+(1, 'Mia\'s Store', 'Mia\'s Store', 'V-07144090-3', 'MICHELLE VARGAS', 'CR ALIANZA GARDENS', '584144979139', '[\"584144979139\",\"584244032682\"]', 'wilmere.vargas@gmail.com', 'TU TIENDA', 'empresa_logo_dcd475aafff5.jpg', 'USD', 16.00, 0.00, '2026-11-27 12:45:19', '2026-11-27 14:45:07');
 
 -- --------------------------------------------------------
 
@@ -477,7 +561,11 @@ INSERT INTO `permissions` (`id`, `code`, `module`, `description`) VALUES
 (44, 'unidades.ver', 'unidades', 'Ver unidades de medida'),
 (45, 'unidades.crear', 'unidades', 'Crear unidades de medida'),
 (46, 'unidades.editar', 'unidades', 'Editar unidades de medida'),
-(47, 'unidades.eliminar', 'unidades', 'Eliminar o desactivar unidades de medida');
+(47, 'unidades.eliminar', 'unidades', 'Eliminar o desactivar unidades de medida'),
+(48, 'combos.ver', 'combos', 'Ver combos y su disponibilidad'),
+(49, 'combos.crear', 'combos', 'Crear combos'),
+(50, 'combos.editar', 'combos', 'Editar combos y sus componentes'),
+(51, 'combos.eliminar', 'combos', 'Eliminar o desactivar combos');
 
 -- --------------------------------------------------------
 
@@ -523,9 +611,9 @@ CREATE TABLE `productos` (
 --
 
 INSERT INTO `productos` (`id`, `producto_base_id`, `es_base`, `idestatus`, `idcategoria`, `idsubcategoria`, `idmarca`, `idmodelo`, `idcolor`, `idtalla`, `idunidad`, `nombre`, `descripcion`, `sku_base`, `codigo_producto`, `codigo_detalle`, `codigo_barras`, `tipo`, `estrellas`, `costo`, `precio`, `preciofull`, `stock`, `stock_inicial`, `stock_minimo`, `stock_maximo`, `unidad_medida`, `imagen`, `created_at`, `updated_at`) VALUES
-(447, NULL, 1, 1, 9, 36, 1, 2, 1, 1, 1, 'BODY', 'BODY MODELO 1', 'P-00447XX', 'P-00447XX', NULL, NULL, NULL, '5', 0.00, 0.00, 0.00, 0, 0, 10, 100, 'UND', 'prod_447_9b37ab7e.jpg', '2026-11-26 14:59:10', '2026-11-26 19:10:33'),
+(447, NULL, 1, 1, 9, 36, 1, 2, 1, 1, 1, 'BODY', 'BODY MODELO 1', 'P-00447XX', 'P-00447XX', NULL, NULL, NULL, '5', 0.00, 0.00, 0.00, 0, 0, 10, 100, 'UND', 'prod_447_9b37ab7e.jpg', '2026-11-26 14:59:10', '2026-11-27 13:41:03'),
 (453, 447, 0, 1, 9, 36, 1, 2, 10, 3, 1, 'BODY', 'BODY MODELO 1', 'P-00453', 'P-00447XX', 'P-00447XX-D453', NULL, NULL, '5', 10.00, 20.00, 15.00, 610, 0, 10, 100, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 17:57:19', '2026-11-26 19:09:03'),
-(454, 447, 0, 1, 9, 36, 1, 2, 10, 3, 1, 'BODY', 'BODY MODELO 1', 'P-00454', 'P-00447XX', 'P-00447XX-D454', NULL, NULL, '5', 10.00, 20.00, 15.00, 1224, 10, 10, 100, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 18:08:39', '2026-11-26 19:19:05'),
+(454, 447, 0, 1, 9, 36, 1, 2, 13, 3, 1, 'BODY', 'BODY MODELO 1', 'P-00454', 'P-00447XX', 'P-00447XX-D454', NULL, NULL, '5', 10.00, 20.00, 15.00, 1224, 10, 10, 100, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 18:08:39', '2026-11-27 14:48:32'),
 (456, 447, 0, 1, 9, 36, 1, 2, 10, 5, 1, 'BODY', 'BODY MODELO 1', 'P-00456', 'P-00447XX', 'P-00447XX-D456', NULL, NULL, '5', 10.00, 20.00, 15.00, 11, 11, 10, 100, 'UND', 'prod_447_c3aff051.jpg', '2026-11-26 18:09:55', '2026-11-26 18:50:45');
 
 -- --------------------------------------------------------
@@ -664,6 +752,10 @@ INSERT INTO `role_permissions` (`role_id`, `permission_id`) VALUES
 (1, 45),
 (1, 46),
 (1, 47),
+(1, 48),
+(1, 49),
+(1, 50),
+(1, 51),
 (2, 1),
 (2, 2),
 (2, 3),
@@ -809,8 +901,12 @@ INSERT INTO `tasas_cambio` (`id`, `moneda`, `moneda_base`, `tasa`, `fuente`, `vi
 (30, 'VES', 'USD', 924.35, 'bcv', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55'),
 (31, 'VES', 'EUR', 1011.73, 'bcv', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55'),
 (32, 'VES', 'USDT', 1093.98, 'usdt', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55'),
-(33, 'VES', 'AJU', 1011.73, 'ajustada', '2026-11-26 00:00:00', '2026-11-26 16:18:55', '2026-11-26 16:18:55'),
-(34, 'VES', 'AJU', 1000.00, 'ajustada', '2026-11-26 18:59:00', '2026-11-26 18:59:34', '2026-11-26 18:59:34');
+(36, 'VES', 'USD', 926.36, 'bcv', '2026-11-27 00:00:00', '2026-11-27 12:15:43', '2026-11-27 12:15:43'),
+(37, 'VES', 'EUR', 1016.86, 'bcv', '2026-11-27 00:00:00', '2026-11-27 12:15:43', '2026-11-27 12:15:43'),
+(41, 'VES', 'AJU', 1020.00, 'ajustada', '2026-11-26 13:40:00', '2026-11-27 13:40:42', '2026-11-27 13:40:42'),
+(42, 'VES', 'AJU', 1020.00, 'ajustada', '2026-11-27 00:00:00', '2026-11-27 13:40:50', '2026-11-27 13:40:50'),
+(43, 'VES', 'AJU', 1025.00, 'ajustada', '2026-11-27 14:10:00', '2026-11-27 14:10:44', '2026-11-27 14:10:44'),
+(44, 'VES', 'USDT', 1084.57, 'usdt', '2026-11-27 00:00:00', '2026-11-27 14:10:50', '2026-11-27 14:10:50');
 
 -- --------------------------------------------------------
 
@@ -928,7 +1024,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `full_name`, `email`, `password_hash`, `is_active`, `is_staff`, `is_superuser`, `last_login`, `created_at`, `updated_at`) VALUES
-(1, 'Wilmer Vargas', 'wilmere.vargas@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$WlNoV3kyUGVqZUJJUklCVg$3YBsArJK1BF3jprph0L2qcXEBy5FHFhmjyOr8pDDlAM', 1, 1, 1, '2026-11-26 14:18:58', '2026-11-23 10:42:59', '2026-11-26 14:18:58');
+(1, 'Wilmer Vargas', 'wilmere.vargas@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$WlNoV3kyUGVqZUJJUklCVg$3YBsArJK1BF3jprph0L2qcXEBy5FHFhmjyOr8pDDlAM', 1, 1, 1, '2026-11-27 10:44:58', '2026-11-23 10:42:59', '2026-11-27 10:44:58');
 
 -- --------------------------------------------------------
 
@@ -1118,9 +1214,33 @@ ALTER TABLE `colores`
   ADD KEY `idx_color_estatus` (`idestatus`);
 
 --
+-- Indices de la tabla `combos`
+--
+ALTER TABLE `combos`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_combo_sku` (`sku`),
+  ADD KEY `idx_combo_estatus` (`idestatus`),
+  ADD KEY `idx_combo_nombre` (`nombre`);
+
+--
+-- Indices de la tabla `combo_detalle`
+--
+ALTER TABLE `combo_detalle`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_combo_producto` (`combo_id`,`producto_id`),
+  ADD KEY `idx_combo_detalle_combo` (`combo_id`),
+  ADD KEY `idx_combo_detalle_producto` (`producto_id`);
+
+--
 -- Indices de la tabla `dolar`
 --
 ALTER TABLE `dolar`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indices de la tabla `empresa`
+--
+ALTER TABLE `empresa`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -1364,6 +1484,18 @@ ALTER TABLE `colores`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
+-- AUTO_INCREMENT de la tabla `combos`
+--
+ALTER TABLE `combos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `combo_detalle`
+--
+ALTER TABLE `combo_detalle`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
 -- AUTO_INCREMENT de la tabla `dolar`
 --
 ALTER TABLE `dolar`
@@ -1421,7 +1553,7 @@ ALTER TABLE `pedidos`
 -- AUTO_INCREMENT de la tabla `permissions`
 --
 ALTER TABLE `permissions`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52;
 
 --
 -- AUTO_INCREMENT de la tabla `productos`
@@ -1463,7 +1595,7 @@ ALTER TABLE `tallas`
 -- AUTO_INCREMENT de la tabla `tasas_cambio`
 --
 ALTER TABLE `tasas_cambio`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT de la tabla `tipos_ubicacion`
@@ -1516,6 +1648,19 @@ ALTER TABLE `categorias`
 --
 ALTER TABLE `colores`
   ADD CONSTRAINT `fk_color_estatus` FOREIGN KEY (`idestatus`) REFERENCES `estatus` (`id`);
+
+--
+-- Filtros para la tabla `combos`
+--
+ALTER TABLE `combos`
+  ADD CONSTRAINT `fk_combo_estatus` FOREIGN KEY (`idestatus`) REFERENCES `estatus` (`id`);
+
+--
+-- Filtros para la tabla `combo_detalle`
+--
+ALTER TABLE `combo_detalle`
+  ADD CONSTRAINT `fk_combo_detalle_combo` FOREIGN KEY (`combo_id`) REFERENCES `combos` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_combo_detalle_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`);
 
 --
 -- Filtros para la tabla `inventario`

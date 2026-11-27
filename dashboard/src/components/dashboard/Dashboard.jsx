@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import AppLayout from '../layout/AppLayout';
 import ModuloDivisas from './ModuloDivisas';
-import CrudProductos from './CrudProductos';
-import CrudCategorias from './CrudCategorias';
-import CrudSubcategorias from './CrudSubcategorias';
-import CrudMarcas from './CrudMarcas';
+import ModuloProductos from './ModuloProductos';
+import CrudClasificacion from './CrudClasificacion';
 import CrudAlmacenes from './CrudAlmacenes';
 import CrudUbicaciones from './CrudUbicaciones';
 import CrudCatalogos from './CrudCatalogos';
@@ -14,6 +12,7 @@ import CrudInventario from './CrudInventario';
 import CrudMovimientos from './CrudMovimientos';
 import PanelReportes from './PanelReportes';
 import ModuloWhatsApp from './ModuloWhatsApp';
+import ModuloEmpresa from './ModuloEmpresa';
 import ModuloSeguridad from '../seguridad/ModuloSeguridad';
 import Icono from '../ui/Icono';
 import { useAuth } from '../../context/AuthContext';
@@ -27,9 +26,9 @@ const MODULOS = {
     grupo: 'Panel de control',
   },
   productos: {
-    componente: CrudProductos,
-    titulo: 'Productos y SKUs',
-    descripcion: 'Crea, edita y organiza las variantes del catálogo con sus precios y estado.',
+    componente: ModuloProductos,
+    titulo: 'Productos y combos',
+    descripcion: 'Gestiona productos, variantes y combos comerciales desde un solo módulo.',
     grupo: 'Operación',
   },
   inventario: {
@@ -56,28 +55,16 @@ const MODULOS = {
     descripcion: 'Define pasillos, estantes y zonas para ubicar el inventario con precisión.',
     grupo: 'Almacén',
   },
-  categorias: {
-    componente: CrudCategorias,
-    titulo: 'Categorías',
-    descripcion: 'Organiza los productos en familias para facilitar su gestión y búsqueda.',
-    grupo: 'Catálogos',
-  },
-  subcategorias: {
-    componente: CrudSubcategorias,
-    titulo: 'Subcategorías',
-    descripcion: 'Define subcategorías dentro de cada categoría para clasificar mejor los productos.',
-    grupo: 'Catálogos',
-  },
-  marcas: {
-    componente: CrudMarcas,
-    titulo: 'Marcas',
-    descripcion: 'Mantén el listado de marcas y fabricantes asociados a tus productos.',
+  clasificacion: {
+    componente: CrudClasificacion,
+    titulo: 'Categorías y subcategorías',
+    descripcion: 'Gestiona categorías y subcategorías desde una sola pantalla con pestañas.',
     grupo: 'Catálogos',
   },
   catalogos: {
     componente: CrudCatalogos,
-    titulo: 'Modelos, colores y tallas',
-    descripcion: 'Gestiona los atributos que definen las variantes de tus productos.',
+    titulo: 'Marcas, modelos, colores y tallas',
+    descripcion: 'Gestiona marcas y atributos que definen las variantes de tus productos.',
     grupo: 'Catálogos',
   },
   unidades: {
@@ -92,10 +79,16 @@ const MODULOS = {
     descripcion: 'Visualiza indicadores clave de inventario, stock y valorización.',
     grupo: 'Análisis',
   },
+  empresa: {
+    componente: ModuloEmpresa,
+    titulo: 'Configuración de empresa',
+    descripcion: 'Define la identidad, contacto, logo y parámetros fiscales de la empresa.',
+    grupo: 'Sistema',
+  },
   whatsapp: {
     componente: ModuloWhatsApp,
     titulo: 'WhatsApp Web',
-    descripcion: 'Conecta el servicio WhatsApp y envía mensajes desde Mia\'s Store.',
+    descripcion: 'Conecta el servicio WhatsApp y envía mensajes desde la empresa.',
     grupo: 'Sistema',
   },
   seguridad: {
@@ -111,13 +104,32 @@ const Dashboard = () => {
 
   const puedeModulo = useCallback((id) => {
     if (id === 'seguridad') return puedeSeguridad;
+    if (id === 'clasificacion') return puede('categorias.ver') || puede('marcas.ver');
     const codigo = ACCESO_MODULO[id];
+    if (Array.isArray(codigo)) return codigo.some((c) => puede(c));
     return codigo ? puede(codigo) : true;
   }, [puede, puedeSeguridad]);
 
   const [moduloActivo, setModuloActivo] = useState(() => (
     Object.keys(MODULOS).find((id) => puedeModulo(id)) || ''
   ));
+  const [nombreEmpresa, setNombreEmpresa] = useState('Empresa');
+
+  useEffect(() => {
+    const cargar = async () => {
+      try {
+        const res = await fetch(`http://${window.location.hostname}:8000/index.php?url=empresa`, { credentials: 'include' });
+        const data = await res.json();
+        if (data?.success) {
+          const nombre = data.datos?.nombre_comercial || data.datos?.razon_social || '';
+          setNombreEmpresa(nombre || 'Empresa');
+        }
+      } catch { /* ignore */ }
+    };
+    cargar();
+    window.addEventListener('mias:empresa-actualizada', cargar);
+    return () => window.removeEventListener('mias:empresa-actualizada', cargar);
+  }, []);
 
   useEffect(() => {
     if (!moduloActivo || !puedeModulo(moduloActivo)) {
@@ -133,7 +145,7 @@ const Dashboard = () => {
     <AppLayout
       moduloActivo={moduloActivo}
       onSelect={setModuloActivo}
-      moduloActual={actual || { titulo: 'Panel administrativo', grupo: "Mia's Store" }}
+      moduloActual={actual || { titulo: 'Panel administrativo', grupo: nombreEmpresa }}
     >
       {ComponenteActivo ? (
         <div className="space-y-6">

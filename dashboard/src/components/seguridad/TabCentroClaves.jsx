@@ -10,6 +10,7 @@ import CampoPassword from '../ui/CampoPassword';
 import { Card, CardBody, CardHeader } from '../ui/Card';
 import { Campo } from '../ui/Campo';
 import { Buscador } from '../ui/BarraFiltros';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const textoError = (error, respaldo) => {
   if (Array.isArray(error)) return error.join(' ');
@@ -281,6 +282,19 @@ const TabCentroClaves = () => {
     return '';
   };
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'Nombre', valor: (r) => r.full_name || '' },
+      { header: 'Email', valor: (r) => r.email || '' },
+      { header: 'Rol', valor: (r) => r.role_label || '' },
+      { header: 'Superusuario', valor: (r) => Number(r.is_superuser) === 1 ? 'Sí' : 'No' },
+      { header: 'Último acceso', valor: (r) => formatearFecha(r.last_login) },
+    ];
+    const filtrosRep = busqueda ? [{ label: 'Búsqueda', value: busqueda }] : [];
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_seguridad_claves', hoja: 'Usuarios', titulo: 'Reporte de Seguridad - Centro de Claves', filtros: filtrosRep, columnas: cols, filas: filtrados });
+    else exportarPDF({ nombre: 'reporte_seguridad_claves', titulo: 'Reporte de Seguridad - Centro de Claves', filtros: filtrosRep, columnas: cols, filas: filtrados });
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -410,10 +424,14 @@ const TabCentroClaves = () => {
             title="Restablecer clave de otro usuario"
             description="Genera una clave temporal y entrégala por un medio seguro."
             action={
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                <Icono nombre="llave" className="h-3 w-3" />
-                Acceso sensible
-              </span>
+              <div className="flex items-center gap-2">
+                <Boton variante="neutral" tamano="sm" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+                <Boton variante="neutral" tamano="sm" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                  <Icono nombre="llave" className="h-3 w-3" />
+                  Acceso sensible
+                </span>
+              </div>
             }
           />
 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useCarrito } from '../context/CarritoContext';
+import { useEmpresa, nombreEmpresa } from '../hooks/useEmpresa';
 
 export default function ModalProducto({ producto, onClose }) {
     const { agregarAlCarrito } = useCarrito();
+    const empresa = useEmpresa();
     const [cantidad, setCantidad] = useState(1);
     const [agregado, setAgregado] = useState(false);
 
@@ -49,7 +51,7 @@ export default function ModalProducto({ producto, onClose }) {
                         <div>
                             <div className="mb-1 flex items-center justify-between gap-2">
                                 <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-blush-600 dark:text-blush-300">
-                                    {producto.marca || "Mia's Store"}
+                                    {producto.marca || nombreEmpresa(empresa)}
                                 </span>
                                 <span className="rounded-full border border-cream-200 bg-white/80 px-2.5 py-1 font-mono text-[10px] text-plum-500 dark:border-plum-700 dark:bg-plum-900/50 dark:text-cream-200/70">
                                     Stock: {producto.stock} {producto.unidad_abreviatura || producto.unidad_medida || ''}

@@ -1,24 +1,31 @@
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useCarrito } from '../context/CarritoContext';
+import { useEmpresa, nombreEmpresa } from '../hooks/useEmpresa';
 
 export default function Navbar() {
     const { isDark, toggleTheme } = useTheme();
     const { totalArticulos, totalPrecio } = useCarrito();
+    const empresa = useEmpresa();
+    const nombre = nombreEmpresa(empresa);
+    const logo = empresa?.logo_url || null;
 
     return (
         <nav className={`sticky top-0 z-40 px-6 py-4 border-b backdrop-blur-md transition-colors duration-300 ${isDark ? 'bg-slate-900/90 border-slate-800 text-white' : 'bg-white/90 border-slate-200 text-slate-800'
             }`}>
             <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-                {/* Logo Mia's Store */}
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-pink-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-pink-500/25">
-                        M
-                    </div>
+                    {logo ? (
+                        <img src={logo} alt={nombre} className="w-10 h-10 rounded-xl object-contain bg-white" />
+                    ) : (
+                        <div className="w-10 h-10 rounded-xl bg-pink-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-pink-500/25">
+                            {String(nombre).trim().charAt(0).toUpperCase() || 'M'}
+                        </div>
+                    )}
                     <div>
-                        <span className="text-xl font-black tracking-wider block">MIA'S STORE</span>
+                        <span className="text-xl font-black tracking-wider block">{nombre}</span>
                         <span className="text-[10px] text-pink-500 font-mono font-bold">
-                            PHP 8 MVC + React SPA
+                            {empresa?.eslogan || 'Tienda online'}
                         </span>
                     </div>
                 </div>

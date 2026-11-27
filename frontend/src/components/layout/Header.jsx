@@ -1,23 +1,32 @@
 import { useTheme } from '../../context/ThemeContext';
 import { useCarrito } from '../../context/CarritoContext';
+import { useEmpresa, nombreEmpresa } from '../../hooks/useEmpresa';
 
 export default function Header() {
   const { isDark, toggleTheme } = useTheme();
   const { totalArticulos, totalPrecio } = useCarrito();
+  const empresa = useEmpresa();
+  const nombre = nombreEmpresa(empresa);
+  const logo = empresa?.logo_url || null;
+  const eslogan = empresa?.eslogan || 'Boutique online';
 
   return (
     <header className="sticky top-0 z-30 border-b border-cream-200/80 bg-cream-50/80 backdrop-blur-xl transition-colors duration-300 dark:border-plum-700/70 dark:bg-plum-900/80">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blush-400 via-blush-500 to-peach-300 font-display text-xl font-bold text-white shadow-lg shadow-blush-500/30">
-            M
-          </div>
+          {logo ? (
+            <img src={logo} alt={nombre} className="h-11 w-11 shrink-0 rounded-2xl object-contain bg-white shadow-lg shadow-blush-500/20" />
+          ) : (
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-blush-400 via-blush-500 to-peach-300 font-display text-xl font-bold text-white shadow-lg shadow-blush-500/30">
+              {String(nombre).trim().charAt(0).toUpperCase() || 'M'}
+            </div>
+          )}
           <div className="min-w-0">
             <p className="truncate font-display text-lg font-semibold tracking-wide text-plum-800 dark:text-cream-50">
-              Mia&apos;s Store
+              {nombre}
             </p>
             <p className="truncate text-[10px] font-semibold uppercase tracking-[0.28em] text-blush-500 dark:text-blush-300">
-              Boutique online
+              {eslogan}
             </p>
           </div>
         </div>

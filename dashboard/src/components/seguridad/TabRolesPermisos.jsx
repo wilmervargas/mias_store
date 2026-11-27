@@ -6,6 +6,7 @@ import { useToast } from '../ui/ToastProvider';
 import Boton from '../ui/Boton';
 import Modal from '../ui/Modal';
 import Icono from '../ui/Icono';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 import { Campo, Input, TextArea } from '../ui/Campo';
 
 const VACIO = { name: '', description: '' };
@@ -255,6 +256,18 @@ const TabRolesPermisos = () => {
   const esAdmin = rolActual?.name === 'ADMIN';
   const eliminarBloqueado = !puedeEliminarRol || esAdmin || (rolActual?.total_usuarios || 0) > 0;
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'Rol', valor: (r) => r.name || '' },
+      { header: 'Etiqueta', valor: (r) => r.label || '' },
+      { header: 'Descripción', valor: (r) => r.description || '' },
+      { header: 'Usuarios', valor: (r) => r.total_usuarios ?? 0 },
+      { header: 'Permisos', valor: (r) => Array.isArray(r.permissions) ? r.permissions.length : (r.total_permisos ?? '') },
+    ];
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_roles', hoja: 'Roles', titulo: 'Reporte de Roles y Permisos', columnas: cols, filas: roles });
+    else exportarPDF({ nombre: 'reporte_roles', titulo: 'Reporte de Roles y Permisos', columnas: cols, filas: roles });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -264,11 +277,13 @@ const TabRolesPermisos = () => {
             Define qué puede hacer cada rol dentro del panel
           </p>
         </div>
-        {puedeCrear ? (
-          <Boton variante="primario" icono="mas" onClick={abrirCrear}>
-            Nuevo rol
-          </Boton>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          {puedeCrear ? (
+            <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nuevo rol</Boton>
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[18rem_minmax(0,1fr)]">

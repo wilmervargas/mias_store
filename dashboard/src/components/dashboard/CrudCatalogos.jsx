@@ -9,8 +9,11 @@ import Icono from '../ui/Icono';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
+import CrudMarcas from './CrudMarcas';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const TABS = [
+  { id: 'marcas', label: 'Marcas', singular: 'Marca', icono: 'marca' },
   { id: 'modelos', label: 'Modelos', singular: 'Modelo', icono: 'modelo' },
   { id: 'colores', label: 'Colores', singular: 'Color', icono: 'color' },
   { id: 'tallas', label: 'Tallas', singular: 'Talla', icono: 'talla' },
@@ -50,6 +53,7 @@ const CrudCatalogos = ({ tabFijo = null }) => {
   }, []);
 
   const cargar = useCallback(async () => {
+    if (tab === 'marcas') { setCargando(false); return; }
     setCargando(true);
     const params = new URLSearchParams({ todos: '1' });
     if (qDebounced) params.append('q', qDebounced);
@@ -205,6 +209,26 @@ const CrudCatalogos = ({ tabFijo = null }) => {
   const limpiar = () => setFiltros({ q: '', estatus: '', idmarca: '', tipo: '' });
   const hayFiltros = filtros.q !== '' || filtros.estatus !== '' || filtros.idmarca !== '' || filtros.tipo !== '';
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'ID', valor: (r) => r.id },
+      { header: 'Nombre', valor: (r) => r.nombre },
+      ...(tab === 'modelos' ? [{ header: 'Marca', valor: (r) => r.marca_nombre || '' }] : []),
+      ...(tab === 'colores' ? [{ header: 'Hex', valor: (r) => r.codigo_hex || '' }] : []),
+      ...(tab === 'tallas' ? [{ header: 'Tipo', valor: (r) => r.tipo || '' }, { header: 'Orden', valor: (r) => r.orden ?? '' }] : []),
+      ...(tab === 'unidades' ? [{ header: 'Abreviatura', valor: (r) => r.abreviatura || '' }] : []),
+      { header: 'Estatus', valor: (r) => Number(r.idestatus) === 1 ? 'Activo' : 'Inactivo' },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.estatus !== '') filtrosRep.push({ label: 'Estatus', value: filtros.estatus === '1' ? 'Activo' : 'Inactivo' });
+    if (filtros.idmarca && tab === 'modelos') filtrosRep.push({ label: 'Marca', value: marcas.find((m) => String(m.id) === String(filtros.idmarca))?.nombre || filtros.idmarca });
+    if (filtros.tipo && tab === 'tallas') filtrosRep.push({ label: 'Tipo', value: filtros.tipo });
+    const nombre = `reporte_${tab}`;
+    if (tipo === 'excel') exportarExcel({ nombre, hoja: tabActual.label, columnas: cols, filas: items });
+    else exportarPDF({ nombre, titulo: `Reporte de ${tabActual.label}`, filtros: filtrosRep, columnas: cols, filas: items });
+  };
+
   const colSpan = tab === 'tallas' ? 7 : 6;
 
   return (
@@ -217,12 +241,16 @@ const CrudCatalogos = ({ tabFijo = null }) => {
           <p className="text-[11px] text-gray-500 mt-0.5">
             {tabFijo
               ? `Gestiona las ${tabActual.label.toLowerCase()} disponibles para los productos`
-              : 'Modelos, colores y tallas de los productos'}
+              : 'Marcas, modelos, colores y tallas de los productos'}
           </p>
         </div>
-        <Boton variante="primario" icono="mas" onClick={abrirCrear}>
-          Nuevo {tabActual.singular}
-        </Boton>
+        {tab !== 'marcas' ? (
+          <div className="flex items-center gap-2">
+            <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+            <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+            <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nuevo {tabActual.singular}</Boton>
+          </div>
+        ) : <div />}
       </div>
 
       {!tabFijo && (
@@ -245,6 +273,10 @@ const CrudCatalogos = ({ tabFijo = null }) => {
         </div>
       )}
 
+      {tab === 'marcas' ? (
+        <CrudMarcas embebido />
+      ) : (
+        <>
       <BarraFiltros
         total={items.length}
         etiqueta={tabActual.label.toLowerCase()}
@@ -457,6 +489,8 @@ const CrudCatalogos = ({ tabFijo = null }) => {
             )}
           </form>
         </Modal>
+      )}
+        </>
       )}
     </div>
   );

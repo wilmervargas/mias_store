@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import Icono from '../ui/Icono';
 import MiClaveModal from '../auth/MiClaveModal';
+import EstadoServicios from './EstadoServicios';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../services/api';
 
 const iniciales = (nombre = '') => {
   const partes = String(nombre).trim().split(/\s+/).filter(Boolean).slice(0, 2);
@@ -15,7 +17,21 @@ export default function Header({ onMenu, moduloActual }) {
 
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [claveAbierta, setClaveAbierta] = useState(false);
+  const [empresa, setEmpresa] = useState(null);
   const menuRef = useRef(null);
+
+  useEffect(() => {
+    const cargarEmpresa = async () => {
+      try {
+        const res = await api.get('empresa');
+        if (res.success) setEmpresa(res.datos || null);
+      } catch { /* ignore */ }
+    };
+    cargarEmpresa();
+    const onUpdate = () => cargarEmpresa();
+    window.addEventListener('mias:empresa-actualizada', onUpdate);
+    return () => window.removeEventListener('mias:empresa-actualizada', onUpdate);
+  }, []);
 
   useEffect(() => {
     if (!menuAbierto) return undefined;
@@ -48,6 +64,8 @@ export default function Header({ onMenu, moduloActual }) {
     await logout();
   };
 
+  const nombreEmpresa = empresa?.nombre_comercial || empresa?.razon_social || '';
+
   return (
     <header className="sticky top-0 z-30 border-b-2 border-purple-300 bg-white/90 backdrop-blur dark:border-purple-800 dark:bg-gray-900/90">
       <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
@@ -65,12 +83,13 @@ export default function Header({ onMenu, moduloActual }) {
               {moduloActual?.titulo || 'Panel administrativo'}
             </p>
             <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-              {moduloActual?.grupo ? `${moduloActual.grupo} · Mia's Store` : "Mia's Store"}
+              {moduloActual?.grupo ? `${moduloActual.grupo} · ${nombreEmpresa || 'Empresa'}` : (nombreEmpresa || 'Empresa')}
             </p>
           </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <EstadoServicios />
           <button
             type="button"
             onClick={toggleTheme}

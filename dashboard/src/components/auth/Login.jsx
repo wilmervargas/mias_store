@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { api } from '../../services/api';
 import Boton from '../ui/Boton';
 import CampoPassword from '../ui/CampoPassword';
 import { Campo, Input } from '../ui/Campo';
 import Icono from '../ui/Icono';
+
+const iniciales = (nombre = '') => {
+  const partes = String(nombre).trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  return partes.map((parte) => parte[0]?.toUpperCase() || '').join('') || 'MS';
+};
 
 const Login = () => {
   const { login } = useAuth();
@@ -14,6 +20,16 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [empresa, setEmpresa] = useState(null);
+
+  useEffect(() => {
+    api.get('empresa').then((res) => {
+      if (res?.success) setEmpresa(res.datos || null);
+    }).catch(() => {});
+  }, []);
+
+  const nombreEmpresa = empresa?.nombre_comercial || empresa?.razon_social || "Mia's Store";
+  const logoEmpresa = empresa?.logo_url || empresa?.logo || null;
 
   const enviar = async (e) => {
     e.preventDefault();
@@ -51,10 +67,18 @@ const Login = () => {
       <div className="relative w-full max-w-md">
         <div className="rounded-3xl border border-purple-200/70 bg-white/95 p-7 shadow-2xl shadow-purple-500/10 backdrop-blur sm:p-9 dark:border-purple-900/50 dark:bg-gray-900/95">
           <div className="mb-7 flex flex-col items-center text-center">
-            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 text-lg font-black text-white shadow-lg shadow-purple-500/30">
-              MS
-            </div>
-            <h1 className="mt-4 text-2xl font-black text-gray-900 dark:text-white">Mia&apos;s Store</h1>
+            {logoEmpresa ? (
+              <img
+                src={logoEmpresa}
+                alt={nombreEmpresa}
+                className="h-16 w-16 rounded-2xl object-contain bg-white shadow-lg shadow-purple-500/20 ring-1 ring-purple-200/60 dark:bg-gray-800 dark:ring-purple-500/20"
+              />
+            ) : (
+              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 text-lg font-black text-white shadow-lg shadow-purple-500/30">
+                {iniciales(nombreEmpresa)}
+              </div>
+            )}
+            <h1 className="mt-4 text-2xl font-black text-gray-900 dark:text-white">{nombreEmpresa}</h1>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Panel administrativo · Acceso seguro
             </p>
@@ -121,7 +145,7 @@ const Login = () => {
         </div>
 
         <p className="mt-5 text-center text-[10px] text-gray-500 dark:text-gray-500">
-          Mia&apos;s Store · Gestión de inventario y tienda
+          {nombreEmpresa} · Gestión de inventario y tienda
         </p>
       </div>
     </div>

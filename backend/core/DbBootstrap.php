@@ -25,6 +25,8 @@ class DbBootstrap
 
         self::aplicarSchema($serverPdo);
         self::asegurarUsuarioDefault($serverPdo);
+        self::asegurarPermisosEmpresa($serverPdo);
+        self::asegurarPermisosCombos($serverPdo);
         self::marcarListo($dbName);
 
         return $serverPdo;
@@ -58,6 +60,8 @@ class DbBootstrap
             self::aplicarSchema($db);
         }
         self::asegurarUsuarioDefault($db);
+        self::asegurarPermisosEmpresa($db);
+        self::asegurarPermisosCombos($db);
         self::marcarListo($dbName);
     }
 
@@ -120,6 +124,87 @@ class DbBootstrap
             ':email' => $email,
             ':hash' => $hash,
         ]);
+    }
+
+    /** Asegura permisos del módulo empresa y los asigna al rol ADMIN. */
+    private static function asegurarPermisosEmpresa(PDO $db): void
+    {
+        try {
+            $existe = $db->query("SHOW TABLES LIKE 'permissions'")->fetchColumn();
+            if (!$existe) return;
+        } catch (Throwable $e) {
+            return;
+        }
+
+        $permisos = [
+            ['empresa.ver', 'empresa', 'Ver la configuracion de la empresa'],
+            ['empresa.editar', 'empresa', 'Editar la configuracion de la empresa'],
+        ];
+
+        $stmtPerm = $db->prepare(
+            'INSERT IGNORE INTO permissions (code, module, description) VALUES (:code, :module, :description)'
+        );
+        foreach ($permisos as [$code, $module, $desc]) {
+            try {
+                $stmtPerm->execute([':code' => $code, ':module' => $module, ':description' => $desc]);
+            } catch (Throwable $e) {
+                // ignorar
+            }
+        }
+
+        // Asignar al rol ADMIN si existe
+        try {
+            $db->exec(
+                "INSERT IGNORE INTO role_permissions (role_id, permission_id)
+                 SELECT r.id, p.id
+                 FROM roles r
+                 JOIN permissions p ON p.code IN ('empresa.ver', 'empresa.editar')
+                 WHERE r.name = 'ADMIN'"
+            );
+        } catch (Throwable $e) {
+            // ignorar
+        }
+    }
+
+    /** Asegura permisos del módulo combos y los asigna al rol ADMIN. */
+    private static function asegurarPermisosCombos(PDO $db): void
+    {
+        try {
+            $existe = $db->query("SHOW TABLES LIKE 'permissions'")->fetchColumn();
+            if (!$existe) return;
+        } catch (Throwable $e) {
+            return;
+        }
+
+        $permisos = [
+            ['combos.ver', 'combos', 'Ver combos y su disponibilidad'],
+            ['combos.crear', 'combos', 'Crear combos'],
+            ['combos.editar', 'combos', 'Editar combos y sus componentes'],
+            ['combos.eliminar', 'combos', 'Eliminar o desactivar combos'],
+        ];
+
+        $stmtPerm = $db->prepare(
+            'INSERT IGNORE INTO permissions (code, module, description) VALUES (:code, :module, :description)'
+        );
+        foreach ($permisos as [$code, $module, $desc]) {
+            try {
+                $stmtPerm->execute([':code' => $code, ':module' => $module, ':description' => $desc]);
+            } catch (Throwable $e) {
+                // ignorar
+            }
+        }
+
+        try {
+            $db->exec(
+                "INSERT IGNORE INTO role_permissions (role_id, permission_id)
+                 SELECT r.id, p.id
+                 FROM roles r
+                 JOIN permissions p ON p.code IN ('combos.ver', 'combos.crear', 'combos.editar', 'combos.eliminar')
+                 WHERE r.name = 'ADMIN'"
+            );
+        } catch (Throwable $e) {
+            // ignorar
+        }
     }
 
     private static function tablasDelSchema(string $schemaPath): array

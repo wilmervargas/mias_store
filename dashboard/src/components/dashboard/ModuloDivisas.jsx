@@ -7,6 +7,7 @@ import Modal from '../ui/Modal';
 import { BarraFiltros } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
 import { Acciones, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const MONEDAS = [
   { id: 'USD', label: 'Dólar BCV', fuente: 'bcv' },
@@ -177,6 +178,23 @@ const ModuloDivisas = () => {
   const limpiar = () => setFiltros({ moneda_base: '', fuente: '', desde: '', hasta: '' });
   const hayFiltros = Object.values(filtros).some(Boolean);
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'Moneda', valor: (r) => r.moneda_base || '' },
+      { header: 'Tasa (Bs)', valor: (r) => r.tasa ?? '' },
+      { header: 'Fuente', valor: (r) => FUENTE_LABEL[r.fuente] || r.fuente || '' },
+      { header: 'Vigente desde', valor: (r) => fmtFecha(r.vigente_desde) },
+      { header: 'Registrado', valor: (r) => fmtFecha(r.created_at) },
+    ];
+    const filtrosRep = [];
+    if (filtros.moneda_base) filtrosRep.push({ label: 'Moneda', value: filtros.moneda_base });
+    if (filtros.fuente) filtrosRep.push({ label: 'Fuente', value: FUENTE_LABEL[filtros.fuente] || filtros.fuente });
+    if (filtros.desde) filtrosRep.push({ label: 'Desde', value: filtros.desde });
+    if (filtros.hasta) filtrosRep.push({ label: 'Hasta', value: filtros.hasta });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_tasas', hoja: 'Tasas', titulo: 'Reporte de Tasas de Cambio', filtros: filtrosRep, columnas: cols, filas: tasas });
+    else exportarPDF({ nombre: 'reporte_tasas', titulo: 'Reporte de Tasas de Cambio', filtros: filtrosRep, columnas: cols, filas: tasas });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -222,6 +240,17 @@ const ModuloDivisas = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-sm font-black text-gray-900 dark:text-white">Historial de tasas</h2>
+          <p className="text-[11px] text-gray-500 mt-0.5">Registro de tasas de cambio aplicadas</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+        </div>
       </div>
 
       <BarraFiltros total={tasas.length} etiqueta="tasas" onLimpiar={limpiar} puedeLimpiar={hayFiltros}>

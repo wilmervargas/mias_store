@@ -34,6 +34,11 @@ INSERT IGNORE INTO permissions (code, module, description) VALUES
 ('productos.crear',        'productos',  'Crear productos y variantes'),
 ('productos.editar',       'productos',  'Editar productos, precios y estado'),
 ('productos.eliminar',     'productos',  'Eliminar o desactivar productos'),
+-- Combos
+('combos.ver',             'combos',     'Ver combos y su disponibilidad'),
+('combos.crear',           'combos',     'Crear combos'),
+('combos.editar',          'combos',     'Editar combos y sus componentes'),
+('combos.eliminar',        'combos',     'Eliminar o desactivar combos'),
 -- Inventario
 ('inventario.ver',         'inventario', 'Ver existencias por almacen y ubicacion'),
 ('inventario.editar',      'inventario', 'Ajustar existencias de inventario'),
@@ -89,7 +94,10 @@ INSERT IGNORE INTO permissions (code, module, description) VALUES
 ('roles.gestionar',        'roles',      'Gestionar la matriz de permisos de los roles'),
 -- Seguridad
 ('seguridad.ver',          'seguridad',  'Ver el centro de claves y seguridad'),
-('seguridad.claves',       'seguridad',  'Restablecer claves de otros usuarios');
+('seguridad.claves',       'seguridad',  'Restablecer claves de otros usuarios'),
+-- Empresa
+('empresa.ver',            'empresa',    'Ver la configuracion de la empresa'),
+('empresa.editar',         'empresa',    'Editar la configuracion de la empresa');
 
 -- ------------------------------------------------------------
 -- 3. Asignacion de permisos a roles base
@@ -118,7 +126,7 @@ JOIN permissions p
 WHERE r.name = 'VENTAS'
   AND p.code LIKE '%.ver'
   AND p.module IN (
-      'productos', 'inventario', 'movimientos', 'almacenes', 'ubicaciones',
+      'productos', 'combos', 'inventario', 'movimientos', 'almacenes', 'ubicaciones',
       'categorias', 'marcas', 'catalogos', 'unidades', 'reportes', 'whatsapp'
   );
 

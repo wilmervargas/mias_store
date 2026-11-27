@@ -6,6 +6,7 @@ import Boton from '../ui/Boton';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Select } from '../ui/Campo';
 import { Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const COLOR_TIPO = {
   entrada: 'bg-emerald-500/10 text-emerald-400',
@@ -66,6 +67,31 @@ const CrudMovimientos = () => {
   const limpiar = () => setFiltros(FILTROS_VACIOS);
   const hayFiltros = Object.values(filtros).some((v) => v !== '');
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'ID', valor: (r) => r.id },
+      { header: 'Fecha', valor: (r) => r.created_at || '' },
+      { header: 'Tipo', valor: (r) => r.tipo || '' },
+      { header: 'Producto', valor: (r) => r.producto || '' },
+      { header: 'SKU', valor: (r) => r.sku_base || '' },
+      { header: 'Origen', valor: (r) => r.almacen_origen ? `${r.almacen_origen}${r.ubicacion_origen ? ' / ' + r.ubicacion_origen : ''}` : '' },
+      { header: 'Destino', valor: (r) => r.almacen_destino ? `${r.almacen_destino}${r.ubicacion_destino ? ' / ' + r.ubicacion_destino : ''}` : '' },
+      { header: 'Cantidad', valor: (r) => r.cantidad },
+      { header: 'Costo unit.', valor: (r) => r.costo_unitario ?? '' },
+      { header: 'Referencia', valor: (r) => r.referencia || '' },
+      { header: 'Motivo', valor: (r) => r.motivo || '' },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.producto) filtrosRep.push({ label: 'Producto', value: productos.find((p) => String(p.id) === String(filtros.producto))?.nombre || filtros.producto });
+    if (filtros.tipo) filtrosRep.push({ label: 'Tipo', value: filtros.tipo });
+    if (filtros.almacen) filtrosRep.push({ label: 'Almacén', value: almacenes.find((a) => String(a.id) === String(filtros.almacen))?.codigo || filtros.almacen });
+    if (filtros.desde) filtrosRep.push({ label: 'Desde', value: filtros.desde });
+    if (filtros.hasta) filtrosRep.push({ label: 'Hasta', value: filtros.hasta });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_movimientos', hoja: 'Movimientos', columnas: cols, filas: movimientos });
+    else exportarPDF({ nombre: 'reporte_movimientos', titulo: 'Reporte de Movimientos de Inventario', filtros: filtrosRep, columnas: cols, filas: movimientos });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -73,9 +99,11 @@ const CrudMovimientos = () => {
           <h2 className="text-sm font-black text-gray-900 dark:text-white">Movimientos de inventario</h2>
           <p className="text-[11px] text-gray-500 mt-0.5">Auditoría completa de entradas, salidas y ajustes</p>
         </div>
-        <Boton variante="info" icono="refrescar" onClick={cargar} cargando={cargando}>
-          Actualizar
-        </Boton>
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          <Boton variante="info" icono="refrescar" onClick={cargar} cargando={cargando}>Actualizar</Boton>
+        </div>
       </div>
 
       <BarraFiltros

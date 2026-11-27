@@ -39,7 +39,7 @@ const normalizarFila = (f = {}, defaults = {}) => ({
   stock: f.stock ?? '',
 });
 
-const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
+const ModalProducto = ({ productoEditar, onClose, onGuardado, soloLectura = false }) => {
   const confirmar = useConfirm();
   const editando = Boolean(productoEditar?.id);
   const filasIniciales = useMemo(() => {
@@ -321,22 +321,27 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
 
   return (
     <Modal
-      titulo={editando ? 'Editar producto' : 'Nuevo producto'}
-      subtitulo={editando ? `SKU base: ${productoEditar?.sku_base || ''}` : 'Registra la cabecera y sus presentaciones por almacén'}
+      titulo={soloLectura ? 'Detalle de producto' : (editando ? 'Editar producto' : 'Nuevo producto')}
+      subtitulo={soloLectura ? `SKU base: ${productoEditar?.sku_base || ''} · Solo visualización` : (editando ? `SKU base: ${productoEditar?.sku_base || ''}` : 'Registra la cabecera y sus presentaciones por almacén')}
       icono="producto"
       tono="neutral"
       onClose={onClose}
       maxW="max-w-6xl"
       footer={
-        <>
-          <Boton variante="neutral" onClick={onClose}>Cancelar</Boton>
-          <Boton type="submit" form="form-producto" variante="primario" icono="guardar" cargando={guardando}>
-            {guardando ? 'Guardando...' : 'Guardar producto'}
-          </Boton>
-        </>
+        soloLectura ? (
+          <Boton variante="neutral" onClick={onClose}>Cerrar</Boton>
+        ) : (
+          <>
+            <Boton variante="neutral" onClick={onClose}>Cancelar</Boton>
+            <Boton type="submit" form="form-producto" variante="primario" icono="guardar" cargando={guardando}>
+              {guardando ? 'Guardando...' : 'Guardar producto'}
+            </Boton>
+          </>
+        )
       }
     >
-      <form id="form-producto" onSubmit={handleSubmit} className="space-y-6">
+      <form id="form-producto" onSubmit={soloLectura ? (e) => e.preventDefault() : handleSubmit} className="space-y-6">
+        <fieldset disabled={soloLectura} className={soloLectura ? 'contents' : 'contents'}>
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <Icono nombre="producto" className="w-4 h-4 text-cyan-400" />
@@ -443,6 +448,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
               onNuevosChange={setImagenesNuevas}
               onEliminarExistente={eliminarImagenExistente}
               max={6}
+              soloLectura={soloLectura}
             />
           </Campo>
         </div>
@@ -456,7 +462,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
               </div>
               <p className="text-[11px] text-gray-500 mt-1">Cada fila es un SKU independiente: puede variar color, talla, costo, precio y stock por almacén.</p>
             </div>
-            <Boton type="button" variante="neutral" icono="mas" onClick={agregarFila}>Agregar fila</Boton>
+            {!soloLectura && <Boton type="button" variante="neutral" icono="mas" onClick={agregarFila}>Agregar fila</Boton>}
           </div>
 
           <div className="space-y-4">
@@ -466,16 +472,18 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
                 <div key={fila._key} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[11px] font-black uppercase tracking-wider text-gray-500">Fila {idx + 1} {fila.id ? <span className="text-cyan-500">#SKU {fila.id}</span> : <span className="text-emerald-500">Nueva</span>}</p>
-                    <div className="flex items-center gap-2">
-                      {editando && fila.id && (
-                        <Boton type="button" variante="neutral" tamano="sm" icono="ajustes" onClick={() => setAjuste({ filaId: fila.id, almacen_id: fila.almacen_id, ubicacion_id: fila.ubicacion_id, tipo: 'entrada', concepto: 'compra', cantidad: 1, motivo: '' })}>
-                          Ajustes
+                    {!soloLectura && (
+                      <div className="flex items-center gap-2">
+                        {editando && fila.id && (
+                          <Boton type="button" variante="neutral" tamano="sm" icono="ajustes" onClick={() => setAjuste({ filaId: fila.id, almacen_id: fila.almacen_id, ubicacion_id: fila.ubicacion_id, tipo: 'entrada', concepto: 'compra', cantidad: 1, motivo: '' })}>
+                            Ajustes
+                          </Boton>
+                        )}
+                        <Boton type="button" variante="peligro" tamano="sm" icono="papelera" onClick={() => quitarFila(fila._key)}>
+                          Quitar
                         </Boton>
-                      )}
-                      <Boton type="button" variante="peligro" tamano="sm" icono="papelera" onClick={() => quitarFila(fila._key)}>
-                        Quitar
-                      </Boton>
-                    </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -548,6 +556,7 @@ const ModalProducto = ({ productoEditar, onClose, onGuardado }) => {
             })}
           </div>
         </div>
+        </fieldset>
       </form>
 
       {ajuste && (

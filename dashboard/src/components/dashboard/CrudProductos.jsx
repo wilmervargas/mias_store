@@ -5,10 +5,12 @@ import { useConfirm } from '../ui/ConfirmProvider';
 import { useToast } from '../ui/ToastProvider';
 import ModalProducto from './ModalProducto';
 import ModalPresentacion from './ModalPresentacion';
+import ModalVerProducto from './ModalVerProducto';
 import Boton from '../ui/Boton';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Input, Select } from '../ui/Campo';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const filtrosIniciales = {
   q: '',
@@ -38,6 +40,7 @@ const CrudProductos = () => {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [productoEditar, setProductoEditar] = useState(null);
   const [presentacionEditar, setPresentacionEditar] = useState(null);
+  const [productoVer, setProductoVer] = useState(null);
   const [filtros, setFiltros] = useState(filtrosIniciales);
   const [detalles, setDetalles] = useState({});
 
@@ -267,6 +270,28 @@ const CrudProductos = () => {
   const limpiar = () => setFiltros(filtrosIniciales);
   const hayFiltros = Object.values(filtros).some((v) => v !== '');
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'Código', valor: (r) => r.codigo_producto || r.sku_base || '' },
+      { header: 'Nombre', valor: (r) => r.nombre || '' },
+      { header: 'Categoría', valor: (r) => r.categoria || '' },
+      { header: 'Subcategoría', valor: (r) => r.subcategoria || '' },
+      { header: 'Marca', valor: (r) => r.marca || '' },
+      { header: 'Modelo', valor: (r) => r.modelo || '' },
+      { header: 'Stock', valor: (r) => r.stock_total ?? r.stock ?? 0 },
+      { header: 'Costo', valor: (r) => r.costo ?? '' },
+      { header: 'Precio', valor: (r) => r.precio ?? '' },
+      { header: 'Estatus', valor: (r) => Number(r.idestatus) === 1 ? 'Activo' : 'Inactivo' },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.idcategoria) filtrosRep.push({ label: 'Categoría', value: categorias.find((c) => String(c.id) === String(filtros.idcategoria))?.nombre || filtros.idcategoria });
+    if (filtros.idmarca) filtrosRep.push({ label: 'Marca', value: marcas.find((m) => String(m.id) === String(filtros.idmarca))?.nombre || filtros.idmarca });
+    if (filtros.estatus !== '') filtrosRep.push({ label: 'Estatus', value: filtros.estatus === '1' ? 'Activo' : 'Inactivo' });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_productos', hoja: 'Productos', columnas: cols, filas: productos });
+    else exportarPDF({ nombre: 'reporte_productos', titulo: 'Reporte de Productos', filtros: filtrosRep, columnas: cols, filas: productos });
+  };
+
   const totalUnidades = productos.reduce((acc, p) => acc + Number(p.stock_total ?? p.stock ?? 0), 0);
   const totalPresentaciones = productos.reduce((acc, p) => acc + Number(p.total_filas ?? 1), 0);
 
@@ -279,13 +304,17 @@ const CrudProductos = () => {
             {productos.length} productos · {totalPresentaciones.toLocaleString('es-VE')} presentaciones · {totalUnidades.toLocaleString('es-VE')} unidades
           </p>
         </div>
-        <Boton
-          variante="primario"
-          icono="mas"
-          onClick={() => { setProductoEditar(null); setModalAbierto(true); }}
-        >
-          Nuevo Producto
-        </Boton>
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          <Boton
+            variante="primario"
+            icono="mas"
+            onClick={() => { setProductoEditar(null); setModalAbierto(true); }}
+          >
+            Nuevo Producto
+          </Boton>
+        </div>
       </div>
 
       <BarraFiltros
@@ -469,8 +498,10 @@ const CrudProductos = () => {
                   <img
                     src={`http://localhost:8000/imagenes/${producto.imagen}`}
                     alt={producto.nombre}
+                    title="Doble clic para ver detalle"
+                    onDoubleClick={() => setProductoVer(producto)}
                     onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="42" height="52"><rect width="100%" height="100%" fill="%23111827"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%236b7280" font-size="8">Sin foto</text></svg>'; }}
-                    className="w-[42px] h-[52px] rounded-lg object-contain bg-gray-950 border border-gray-800"
+                    className="w-[42px] h-[52px] rounded-lg object-contain bg-gray-950 border border-gray-800 cursor-pointer hover:ring-2 hover:ring-rose-500/60"
                   />
                 </Td>
                 <Td compacta className="font-mono text-[10px] text-cyan-400">
@@ -611,6 +642,13 @@ const CrudProductos = () => {
           productoEditar={productoEditar}
           onClose={() => setModalAbierto(false)}
           onGuardado={onGuardadoProducto}
+        />
+      )}
+
+      {productoVer && (
+        <ModalVerProducto
+          producto={productoVer}
+          onClose={() => setProductoVer(null)}
         />
       )}
 

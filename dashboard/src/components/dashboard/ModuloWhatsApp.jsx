@@ -44,9 +44,19 @@ export default function ModuloWhatsApp() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState(null);
   const [to, setTo] = useState('');
-  const [message, setMessage] = useState('Mensaje de prueba desde Mia\'s Store.');
+  const [message, setMessage] = useState('Mensaje de prueba desde la empresa.');
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null);
+  const [empresaWhatsapp, setEmpresaWhatsapp] = useState('');
+
+  useEffect(() => {
+    api.get('empresa').then((res) => {
+      if (res.success) {
+        const ws = res.datos?.whatsapp || res.datos?.telefonos?.[0] || '';
+        setEmpresaWhatsapp(ws || '');
+      }
+    });
+  }, []);
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -107,8 +117,14 @@ export default function ModuloWhatsApp() {
     }
   };
 
-  const cleanPhone = to.replace(/\D/g, '');
-  const canSend = !sending && cleanPhone.length >= 8 && message.trim().length > 0;
+  const normalizarWa = (v) => {
+    let d = String(v || '').replace(/\D/g, '');
+    if (/^0\d{10}$/.test(d)) d = '58' + d.slice(1);
+    else if (/^\d{10}$/.test(d)) d = '58' + d;
+    return d;
+  };
+  const cleanPhone = normalizarWa(to);
+  const canSend = !sending && /^58\d{10}$/.test(cleanPhone) && message.trim().length > 0;
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -236,15 +252,30 @@ export default function ModuloWhatsApp() {
               </div>
             </div>
 
-            <Campo label="Número destino" hint="Formato internacional, solo dígitos (sin +, espacios ni guiones). Ej: 584141234567">
-              <Input
-                type="tel"
-                inputMode="numeric"
-                placeholder="584141234567"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-                autoComplete="off"
-              />
+            <Campo label="Número destino" hint="Puedes escribir 0424 4032682; para WhatsApp se usa 584244032682.">
+              <div className="space-y-2">
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder={empresaWhatsapp || '0424 4032682'}
+                  value={to}
+                  onChange={(e) => setTo(e.target.value)}
+                  autoComplete="off"
+                />
+                {empresaWhatsapp ? (
+                  <button
+                    type="button"
+                    onClick={() => setTo(empresaWhatsapp)}
+                    className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                  >
+                    Usar WhatsApp de empresa: +{empresaWhatsapp}
+                  </button>
+                ) : (
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                    No hay teléfonos de contacto configurados en Empresa.
+                  </p>
+                )}
+              </div>
             </Campo>
 
             <Campo label="Mensaje">

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ModalProducto from '../components/ModalProducto';
 import { useCarrito } from '../context/CarritoContext';
+import { useEmpresa, nombreEmpresa } from '../hooks/useEmpresa';
 
 export default function Tienda() {
   const { agregarAlCarrito } = useCarrito();
+  const empresa = useEmpresa();
 
   const [productos, setProductos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -242,7 +244,7 @@ export default function Tienda() {
                         }}
                       />
                       <span className="absolute left-3 top-3 rounded-full bg-white/85 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-blush-600 shadow-sm backdrop-blur dark:bg-plum-900/75 dark:text-blush-300">
-                        {prod.marca || "Mia's Store"}
+                        {prod.marca || nombreEmpresa(empresa)}
                       </span>
                       {stockGrupo === 0 && (
                         <span className="absolute right-3 top-3 rounded-full bg-blush-600 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white shadow-sm">

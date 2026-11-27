@@ -1,15 +1,18 @@
 import React from 'react';
+import { useEmpresa, nombreEmpresa } from '../hooks/useEmpresa';
 
 export default function Footer() {
+  const empresa = useEmpresa();
+  const nombre = nombreEmpresa(empresa);
   return (
     <footer className="border-t border-cream-200/80 bg-gradient-to-b from-cream-50/60 to-peach-100/60 py-10 transition-colors duration-300 dark:border-plum-700/70 dark:from-plum-900 dark:to-plum-800/80">
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-6 px-4 text-xs text-plum-500 sm:px-6 md:flex-row md:justify-between lg:px-8 dark:text-cream-200/60">
         <div className="text-center md:text-left">
           <span className="block font-display text-base font-semibold text-plum-800 dark:text-cream-50">
-            Mia&apos;s Store
+            {nombre}
           </span>
           <p className="mt-1 text-[11px]">
-            Proyecto E-Commerce · Curso Full Stack JS + PHP 8 MVC · Cohorte 2026
+            {empresa?.eslogan || 'Todos los derechos reservados.'}
           </p>
         </div>
 

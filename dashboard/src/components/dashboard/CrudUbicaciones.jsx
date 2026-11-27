@@ -8,6 +8,7 @@ import Modal from '../ui/Modal';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const vacio = { almacen_id: '', padre_id: '', idtipo_ubicacion: '', codigo: '', nombre: '' };
 
@@ -199,6 +200,27 @@ const CrudUbicaciones = () => {
   const limpiar = () => setFiltros({ q: '', almacen: '', tipo: '', estatus: '' });
   const hayFiltros = filtros.q !== '' || filtros.almacen !== '' || filtros.tipo !== '' || filtros.estatus !== '';
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'Ruta', valor: (r) => r.ruta },
+      { header: 'Código', valor: (r) => r.codigo },
+      { header: 'Nombre', valor: (r) => r.nombre },
+      { header: 'Almacén', valor: (r) => r.almacen_codigo || '' },
+      { header: 'Tipo', valor: (r) => r.tipo_ubicacion || '' },
+      { header: 'Padre', valor: (r) => r.padre_codigo || '' },
+      { header: 'Profundidad', valor: (r) => r.profundidad ?? '' },
+      { header: 'Unidades', valor: (r) => r.unidades ?? 0 },
+      { header: 'Estatus', valor: (r) => Number(r.idestatus) === 1 ? 'Activa' : 'Inactiva' },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.almacen) filtrosRep.push({ label: 'Almacén', value: almacenes.find((a) => String(a.id) === String(filtros.almacen))?.codigo || filtros.almacen });
+    if (filtros.tipo) filtrosRep.push({ label: 'Tipo', value: tipos.find((t) => String(t.id) === String(filtros.tipo))?.nombre || filtros.tipo });
+    if (filtros.estatus !== '') filtrosRep.push({ label: 'Estatus', value: filtros.estatus === '1' ? 'Activa' : 'Inactiva' });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_ubicaciones', hoja: 'Ubicaciones', columnas: cols, filas: ubicaciones });
+    else exportarPDF({ nombre: 'reporte_ubicaciones', titulo: 'Reporte de Ubicaciones', filtros: filtrosRep, columnas: cols, filas: ubicaciones });
+  };
+
   const opcionesPadre = ubicacionesPadre.filter((u) => {
     if (!editando) return true;
     if (u.id === editando.id) return false;
@@ -212,9 +234,11 @@ const CrudUbicaciones = () => {
           <h2 className="text-sm font-black text-gray-900 dark:text-white">Ubicaciones</h2>
           <p className="text-[11px] text-gray-500 mt-0.5">Árbol físico dentro de cada almacén</p>
         </div>
-        <Boton variante="primario" icono="mas" onClick={abrirCrear}>
-          Nueva Ubicación
-        </Boton>
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nueva Ubicación</Boton>
+        </div>
       </div>
 
       <BarraFiltros

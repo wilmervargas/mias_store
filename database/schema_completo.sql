@@ -545,6 +545,66 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
+-- --------------------------------------------------------
+-- Tabla: empresa
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `empresa` (
+  `id` int(11) NOT NULL DEFAULT 1,
+  `razon_social` varchar(200) NOT NULL DEFAULT '',
+  `nombre_comercial` varchar(200) NOT NULL DEFAULT '',
+  `rif` varchar(30) NOT NULL DEFAULT '',
+  `representante` varchar(150) NOT NULL DEFAULT '',
+  `direccion` text DEFAULT NULL,
+  `telefono` varchar(30) NOT NULL DEFAULT '',
+  `telefonos` text DEFAULT NULL,
+  `email` varchar(190) NOT NULL DEFAULT '',
+  `eslogan` varchar(200) NOT NULL DEFAULT '',
+  `logo` varchar(255) NOT NULL DEFAULT '',
+  `moneda_base` varchar(3) NOT NULL DEFAULT 'USD',
+  `iva_rate` decimal(5,2) NOT NULL DEFAULT 16.00,
+  `igtf_rate` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Tabla: combos
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `combos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `idestatus` int(11) NOT NULL DEFAULT 1,
+  `sku` varchar(64) NOT NULL,
+  `nombre` varchar(150) NOT NULL,
+  `precio` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `imagen` varchar(150) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_combo_sku` (`sku`),
+  KEY `idx_combo_estatus` (`idestatus`),
+  KEY `idx_combo_nombre` (`nombre`),
+  CONSTRAINT `fk_combo_estatus` FOREIGN KEY (`idestatus`) REFERENCES `estatus` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+-- Tabla: combo_detalle
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `combo_detalle` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `combo_id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `cantidad` decimal(12,3) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_combo_producto` (`combo_id`, `producto_id`),
+  KEY `idx_combo_detalle_combo` (`combo_id`),
+  KEY `idx_combo_detalle_producto` (`producto_id`),
+  CONSTRAINT `fk_combo_detalle_combo` FOREIGN KEY (`combo_id`) REFERENCES `combos` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_combo_detalle_producto` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- Vista: v_stock_almacen
 CREATE OR REPLACE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_stock_almacen` AS select `i`.`producto_id` AS `producto_id`,`u`.`almacen_id` AS `almacen_id`,`a`.`nombre` AS `almacen`,coalesce(sum(`i`.`cantidad`),0) AS `stock` from ((`inventario` `i` join `ubicaciones` `u` on(`u`.`id` = `i`.`ubicacion_id`)) join `almacenes` `a` on(`a`.`id` = `u`.`almacen_id`)) group by `i`.`producto_id`,`u`.`almacen_id`,`a`.`nombre`;
 

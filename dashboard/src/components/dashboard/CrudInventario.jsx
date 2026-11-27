@@ -9,6 +9,7 @@ import Icono from '../ui/Icono';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
 import { Acciones, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const TIPOS = [
   { id: 'entrada', label: 'Entrada', signo: '+' },
@@ -229,6 +230,23 @@ const CrudInventario = () => {
   const limpiar = () => setFiltros({ almacen: '', q: '', solo_con_stock: '1' });
   const hayFiltros = filtros.q !== '' || filtros.almacen !== '' || filtros.solo_con_stock !== '1';
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'Producto', valor: (r) => r.producto },
+      { header: 'SKU', valor: (r) => r.sku_base },
+      { header: 'Almacén', valor: (r) => r.almacen_codigo },
+      { header: 'Ubicación', valor: (r) => r.ruta },
+      { header: 'Tipo', valor: (r) => r.tipo_ubicacion },
+      { header: 'Cantidad', valor: (r) => r.cantidad },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.almacen) filtrosRep.push({ label: 'Almacén', value: almacenes.find((a) => String(a.id) === String(filtros.almacen))?.codigo || filtros.almacen });
+    filtrosRep.push({ label: 'Solo con stock', value: filtros.solo_con_stock === '1' ? 'Sí' : 'No' });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_inventario', hoja: 'Inventario', columnas: cols, filas: inventario });
+    else exportarPDF({ nombre: 'reporte_inventario', titulo: 'Reporte de Inventario', filtros: filtrosRep, columnas: cols, filas: inventario });
+  };
+
   const tipoActual = TIPOS.find((t) => t.id === form.tipo);
 
   return (
@@ -238,9 +256,11 @@ const CrudInventario = () => {
           <h2 className="text-sm font-black text-gray-900 dark:text-white">Inventario por ubicación</h2>
           <p className="text-[11px] text-gray-500 mt-0.5">Stock real distribuido por almacén y ubicación física</p>
         </div>
-        <Boton variante="primario" icono="movimiento" onClick={abrirMovimiento}>
-          Registrar Movimiento
-        </Boton>
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          <Boton variante="primario" icono="movimiento" onClick={abrirMovimiento}>Registrar Movimiento</Boton>
+        </div>
       </div>
 
       <BarraFiltros

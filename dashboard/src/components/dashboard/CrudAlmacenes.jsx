@@ -8,6 +8,7 @@ import Modal from '../ui/Modal';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Campo, Input, Select } from '../ui/Campo';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const vacio = { codigo: '', nombre: '', direccion: '', telefono: '' };
 
@@ -166,6 +167,21 @@ const CrudAlmacenes = () => {
   const limpiar = () => setFiltros({ q: '', estatus: '' });
   const hayFiltros = filtros.q !== '' || filtros.estatus !== '';
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'Código', valor: (r) => r.codigo },
+      { header: 'Nombre', valor: (r) => r.nombre },
+      { header: 'Dirección', valor: (r) => r.direccion || '' },
+      { header: 'Teléfono', valor: (r) => r.telefono || '' },
+      { header: 'Estatus', valor: (r) => Number(r.idestatus) === 1 ? 'Activo' : 'Inactivo' },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.estatus !== '') filtrosRep.push({ label: 'Estatus', value: filtros.estatus === '1' ? 'Activo' : 'Inactivo' });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_almacenes', hoja: 'Almacenes', columnas: cols, filas: almacenes });
+    else exportarPDF({ nombre: 'reporte_almacenes', titulo: 'Reporte de Almacenes', filtros: filtrosRep, columnas: cols, filas: almacenes });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -173,9 +189,11 @@ const CrudAlmacenes = () => {
           <h2 className="text-sm font-black text-gray-900 dark:text-white">Almacenes</h2>
           <p className="text-[11px] text-gray-500 mt-0.5">Depósitos físicos y su inventario</p>
         </div>
-        <Boton variante="primario" icono="mas" onClick={abrirCrear}>
-          Nuevo Almacén
-        </Boton>
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nuevo Almacén</Boton>
+        </div>
       </div>
 
       <BarraFiltros

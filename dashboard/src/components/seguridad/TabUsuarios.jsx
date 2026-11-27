@@ -13,6 +13,7 @@ import Icono from '../ui/Icono';
 import { Campo, Input, Select } from '../ui/Campo';
 import { BarraFiltros, Buscador } from '../ui/BarraFiltros';
 import { Acciones, BadgeEstado, Tabla, Td, Th } from '../ui/Tabla';
+import { exportarExcel, exportarPDF } from '../../utils/reportes';
 
 const VACIO = {
   full_name: '',
@@ -252,6 +253,22 @@ const TabUsuarios = () => {
   const hayFiltros = filtros.q !== '' || filtros.estado !== '';
   const esMiCuenta = Boolean(editando && editando.id === sesion?.id);
 
+  const exportar = (tipo) => {
+    const cols = [
+      { header: 'Nombre', valor: (r) => r.full_name || '' },
+      { header: 'Email', valor: (r) => r.email || '' },
+      { header: 'Roles', valor: (r) => (r.roles || []).map((rol) => rol.name).join(', ') },
+      { header: 'Superusuario', valor: (r) => r.is_superuser ? 'Sí' : 'No' },
+      { header: 'Estado', valor: (r) => r.is_active ? 'Activo' : 'Inactivo' },
+      { header: 'Último acceso', valor: (r) => formatearFecha(r.last_login) },
+    ];
+    const filtrosRep = [];
+    if (filtros.q) filtrosRep.push({ label: 'Búsqueda', value: filtros.q });
+    if (filtros.estado) filtrosRep.push({ label: 'Estado', value: filtros.estado === 'activos' ? 'Activos' : 'Inactivos' });
+    if (tipo === 'excel') exportarExcel({ nombre: 'reporte_usuarios', hoja: 'Usuarios', titulo: 'Reporte de Usuarios', filtros: filtrosRep, columnas: cols, filas: usuarios });
+    else exportarPDF({ nombre: 'reporte_usuarios', titulo: 'Reporte de Usuarios', filtros: filtrosRep, columnas: cols, filas: usuarios });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -259,11 +276,13 @@ const TabUsuarios = () => {
           <h2 className="text-sm font-black text-gray-900 dark:text-white">Usuarios y cuentas</h2>
           <p className="mt-0.5 text-[11px] text-gray-500">Altas, roles y estado de acceso</p>
         </div>
-        {puedeCrear ? (
-          <Boton variante="primario" icono="mas" onClick={abrirCrear}>
-            Nuevo usuario
-          </Boton>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <Boton variante="neutral" icono="excel" onClick={() => exportar('excel')}>Excel</Boton>
+          <Boton variante="neutral" icono="pdf" onClick={() => exportar('pdf')}>PDF</Boton>
+          {puedeCrear ? (
+            <Boton variante="primario" icono="mas" onClick={abrirCrear}>Nuevo usuario</Boton>
+          ) : null}
+        </div>
       </div>
 
       <BarraFiltros

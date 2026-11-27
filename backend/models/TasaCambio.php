@@ -293,24 +293,41 @@ class TasaCambio
         if (self::tieneTasaDelDia('AJU', $fecha)) return 'existente';
         $db = Database::conectar();
 
-        // Primera vez en el día: tomar valor del Euro.
+        // Prioridad 1: usar el monto del día anterior (última AJU conocida) y actualizar fecha actual.
         $stmt = $db->prepare(
-            "SELECT tasa FROM tasas_cambio WHERE moneda='VES' AND moneda_base='EUR' AND DATE(vigente_desde) <= :f ORDER BY vigente_desde DESC, id DESC LIMIT 1"
+            "SELECT tasa FROM tasas_cambio
+             WHERE moneda='VES' AND moneda_base='AJU' AND DATE(vigente_desde) < :f
+             ORDER BY vigente_desde DESC, id DESC LIMIT 1"
+        );
+        $stmt->execute([':f' => $fecha]);
+        $ajuAnterior = $stmt->fetchColumn();
+        if ($ajuAnterior !== false && $ajuAnterior !== null && (float) $ajuAnterior > 0) {
+            self::crearSiFalta('AJU', (float) $ajuAnterior, 'ajustada', $fecha);
+            return 'creada_desde_anterior';
+        }
+
+        // Si no hay AJU previa, tomar como valor referencial el Euro BCV.
+        $stmt = $db->prepare(
+            "SELECT tasa FROM tasas_cambio
+             WHERE moneda='VES' AND moneda_base='EUR' AND DATE(vigente_desde) <= :f
+             ORDER BY vigente_desde DESC, id DESC LIMIT 1"
         );
         $stmt->execute([':f' => $fecha]);
         $eur = $stmt->fetchColumn();
-        if ($eur) {
+        if ($eur !== false && $eur !== null && (float) $eur > 0) {
             self::crearSiFalta('AJU', (float) $eur, 'ajustada', $fecha);
             return 'creada_desde_eur';
         }
 
         // Respaldo: si no hay EUR, usar USD.
         $stmt = $db->prepare(
-            "SELECT tasa FROM tasas_cambio WHERE moneda='VES' AND moneda_base='USD' AND DATE(vigente_desde) <= :f ORDER BY vigente_desde DESC, id DESC LIMIT 1"
+            "SELECT tasa FROM tasas_cambio
+             WHERE moneda='VES' AND moneda_base='USD' AND DATE(vigente_desde) <= :f
+             ORDER BY vigente_desde DESC, id DESC LIMIT 1"
         );
         $stmt->execute([':f' => $fecha]);
         $usd = $stmt->fetchColumn();
-        if ($usd) {
+        if ($usd !== false && $usd !== null && (float) $usd > 0) {
             self::crearSiFalta('AJU', (float) $usd, 'ajustada', $fecha);
             return 'creada_desde_usd';
         }

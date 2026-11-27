@@ -2,7 +2,7 @@
 // El modulo "seguridad" se evalua con la regla especial puedeSeguridad.
 export const ACCESO_MODULO = {
   divisas: null,
-  productos: 'productos.ver',
+  productos: ['productos.ver', 'combos.ver'],
   inventario: 'inventario.ver',
   movimientos: 'movimientos.ver',
   almacenes: 'almacenes.ver',
@@ -10,10 +10,12 @@ export const ACCESO_MODULO = {
   categorias: 'categorias.ver',
   subcategorias: 'categorias.ver',
   marcas: 'marcas.ver',
+  clasificacion: null,
   catalogos: 'catalogos.ver',
   unidades: 'unidades.ver',
   reportes: 'reportes.ver',
   whatsapp: 'whatsapp.ver',
+  empresa: 'empresa.ver',
   seguridad: null,
 };
 
@@ -27,7 +29,7 @@ export const GRUPOS_MENU = [
   {
     title: 'Operación',
     items: [
-      { id: 'productos', label: 'Productos', icono: 'producto', hint: 'SKUs, precios y ficha' },
+      { id: 'productos', label: 'Productos y combos', icono: 'producto', hint: 'SKUs, variantes y combos' },
       { id: 'inventario', label: 'Inventario', icono: 'inventario', hint: 'Stock por ubicación' },
       { id: 'movimientos', label: 'Movimientos', icono: 'movimiento', hint: 'Entradas, salidas y ajustes' },
     ],
@@ -42,10 +44,8 @@ export const GRUPOS_MENU = [
   {
     title: 'Catálogos',
     items: [
-      { id: 'categorias', label: 'Categorías', icono: 'categoria', hint: 'Familias principales' },
-      { id: 'subcategorias', label: 'Subcategorías', icono: 'categoria', hint: 'Clasificación dentro de categorías' },
-      { id: 'marcas', label: 'Marcas', icono: 'marca', hint: 'Fabricantes y marcas' },
-      { id: 'catalogos', label: 'Modelos, colores y tallas', icono: 'catalogo', hint: 'Atributos de variantes' },
+      { id: 'clasificacion', label: 'Categorías y subcategorías', icono: 'categoria', hint: 'Clasificación comercial en pestañas' },
+      { id: 'catalogos', label: 'Marcas, modelos, colores y tallas', icono: 'catalogo', hint: 'Atributos de variantes y marcas' },
       { id: 'unidades', label: 'Unidades de medida', icono: 'inventario', hint: 'Pieza, docena, paquete, etc.' },
     ],
   },
@@ -58,6 +58,7 @@ export const GRUPOS_MENU = [
   {
     title: 'Sistema',
     items: [
+      { id: 'empresa', label: 'Empresa', icono: 'ajustes', hint: 'Datos fiscales, contacto y logo' },
       { id: 'whatsapp', label: 'WhatsApp', icono: 'whatsapp', hint: 'Conexión y envío de mensajes' },
     ],
   },

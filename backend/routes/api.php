@@ -22,6 +22,8 @@ require_once __DIR__ . '/../controllers/RolController.php';
 require_once __DIR__ . '/../controllers/PermisoController.php';
 require_once __DIR__ . '/../controllers/SeguridadController.php';
 require_once __DIR__ . '/../controllers/TasaCambioController.php';
+require_once __DIR__ . '/../controllers/EmpresaController.php';
+require_once __DIR__ . '/../controllers/ComboController.php';
 
 $ctrlProd  = new ProductoController();
 $ctrlCat   = new CategoriaController();
@@ -39,6 +41,8 @@ $ctrlRol   = new RolController();
 $ctrlPerm  = new PermisoController();
 $ctrlSeg   = new SeguridadController();
 $ctrlTasa  = new TasaCambioController();
+$ctrlEmp   = new EmpresaController();
+$ctrlCombo = new ComboController();
 
 // ==============================================================
 // 0. AUTENTICACION Y CONTROL DE ACCESOS
@@ -115,7 +119,43 @@ if ($metodo === 'POST' && ($url === 'seguridad/restablecer-password' || $url ===
 }
 
 // ==============================================================
-// 1. PRODUCTOS
+// 1. COMBOS
+// ==============================================================
+if ($metodo === 'GET' && ($url === 'combos/productos-disponibles' || $url === 'api/combos/productos-disponibles')) {
+    $ctrlCombo->productosDisponibles();
+    exit;
+}
+if ($metodo === 'POST' && preg_match('#^(?:api/)?combos/([0-9]+)/imagen$#', $url, $m)) {
+    $ctrlCombo->subirImagen((int) $m[1]);
+    exit;
+}
+if ($metodo === 'POST' && preg_match('#^(?:api/)?combos/([0-9]+)/vender$#', $url, $m)) {
+    $ctrlCombo->vender((int) $m[1]);
+    exit;
+}
+if ($metodo === 'GET' && preg_match('#^(?:api/)?combos/([0-9]+)$#', $url, $m)) {
+    $ctrlCombo->mostrar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'GET' && ($url === 'combos' || $url === 'api/combos')) {
+    $ctrlCombo->listar();
+    exit;
+}
+if ($metodo === 'POST' && ($url === 'combos' || $url === 'api/combos')) {
+    $ctrlCombo->crear();
+    exit;
+}
+if ($metodo === 'PUT' && preg_match('#^(?:api/)?combos/([0-9]+)$#', $url, $m)) {
+    $ctrlCombo->actualizar((int) $m[1]);
+    exit;
+}
+if ($metodo === 'DELETE' && preg_match('#^(?:api/)?combos/([0-9]+)$#', $url, $m)) {
+    $ctrlCombo->eliminar((int) $m[1]);
+    exit;
+}
+
+// ==============================================================
+// 2. PRODUCTOS
 // ==============================================================
 
 // Imágenes de producto -> van ANTES de /productos/{id}
@@ -421,6 +461,26 @@ if ($metodo === 'PUT' && preg_match('#^(?:api/)?tasas-cambio/([0-9]+)$#', $url, 
 }
 if ($metodo === 'DELETE' && preg_match('#^(?:api/)?tasas-cambio/([0-9]+)$#', $url, $m)) {
     $ctrlTasa->eliminar((int) $m[1]);
+    exit;
+}
+
+// ==============================================================
+// 12. EMPRESA / CONFIGURACION
+// ==============================================================
+if ($metodo === 'GET' && ($url === 'empresa' || $url === 'api/empresa')) {
+    $ctrlEmp->mostrar();
+    exit;
+}
+if (($metodo === 'PUT' || $metodo === 'POST') && ($url === 'empresa' || $url === 'api/empresa')) {
+    $ctrlEmp->guardar();
+    exit;
+}
+if ($metodo === 'POST' && ($url === 'empresa/logo' || $url === 'api/empresa/logo')) {
+    $ctrlEmp->subirLogo();
+    exit;
+}
+if ($metodo === 'DELETE' && ($url === 'empresa/logo' || $url === 'api/empresa/logo')) {
+    $ctrlEmp->eliminarLogo();
     exit;
 }
 
